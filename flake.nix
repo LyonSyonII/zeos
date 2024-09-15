@@ -15,6 +15,7 @@
           gdb
           bintools
           dev86
+          bochs
         ];
 
         buildInputs = with pkgs; [
