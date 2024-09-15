@@ -13,7 +13,7 @@
       devShells.default = pkgs.mkShell rec {
         nativeBuildInputs = with pkgs; [
           gdb
-          llvmpackages.bintools
+          bintools
         ];
 
         buildInputs = with pkgs; [
