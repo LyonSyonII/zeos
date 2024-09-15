@@ -7,6 +7,8 @@
 # package dev86 is required
 AS86 = as86 -0 -a
 LD86 = ld86 -0
+BOCHS = ./bin/bochs_gdb
+BOCHS_NOGDB = ./bin/bochs_nogdb
 
 HOSTCFLAGS = -Wall -Wstrict-prototypes -g
 HOSTCC = gcc
@@ -101,11 +103,11 @@ disk: zeos.bin
 	dd if=zeos.bin of=/dev/fd0
 
 emul: zeos.bin
-	bochs -q -f .bochsrc
+	$(BOCHS) -q -f .bochsrc
 
 gdb: zeos.bin
-	bochs -q -f .bochsrc_gdb &
+	$(BOCHS) -q -f .bochsrc_gdb &
 	gdb -x .gdbcmd system
 
 emuldbg: zeos.bin
-	bochs_nogdb -q -f .bochsrc
+	$(BOCHS_NOGDB) -q -f .bochsrc

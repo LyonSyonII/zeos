@@ -16,13 +16,13 @@
           bintools
           dev86
           bochs
-        ];
 
-        buildInputs = with pkgs; [
           stdenv
           gnumake
-          ccls
+          llvmPackages.clang-tools
           pkg-config
+
+          gtk2
         ];
 
         LD_LIBRARY_PATH = with pkgs; lib.makeLibraryPath nativeBuildInputs;
