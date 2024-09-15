@@ -1,7 +1,6 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    systems.url = "github:nix-systems/default";
     devenv.url = "github:cachix/devenv";
   };
 
@@ -10,33 +9,26 @@
     extra-substituters = "https://devenv.cachix.org";
   };
 
-  outputs = { self, nixpkgs, devenv, systems, ... } @ inputs:
+  outputs = { self, nixpkgs, devenv, ... } @ inputs:
     let
-      forEachSystem = nixpkgs.lib.genAttrs (import systems);
+      system = "x86_64-linux";
+
+      pkgs = nixpkgs.legacyPackages.${system};
     in
     {
-      devShells = forEachSystem
-        (system:
-          let
-            pkgs = nixpkgs.legacyPackages.${system};
-          in
-          {
-            default = devenv.lib.mkShell {
-              inherit inputs pkgs;
-              modules = [
-                {
-                  languages = {
-                    c.enable = true;
-                  };
-                  # https://devenv.sh/reference/options/
-                  packages = with pkgs; [
-                    cmake
-                  ];
+      packages.${system}.devenv-up = self.devShells.${system}.default.config.procfileScript;
 
-                  # enterShell = '' '';
-                }
-              ];
-            };
-          });
+      devShells.${system}.default = devenv.lib.mkShell {
+        inherit inputs pkgs;
+        modules = [
+          ({ pkgs, config, ... }: {
+            # This is your devenv configuration
+            c.enable = true;
+            packages = [ ];
+
+            enterShell = '' '';
+          })
+        ];
+      };
     };
 }
