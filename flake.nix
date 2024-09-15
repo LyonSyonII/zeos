@@ -14,6 +14,7 @@
         nativeBuildInputs = with pkgs; [
           gdb
           bintools
+          dev86
         ];
 
         buildInputs = with pkgs; [
