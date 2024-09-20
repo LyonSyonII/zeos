@@ -51,3 +51,19 @@
       movl %edx, %ds;           \
       movl %edx, %es
 
+#define RESTORE_ALL \
+      popl %gs; \
+      popl %fs; \
+      popl %es; \
+      popl %ds; \
+      popl %eax; \
+      popl %ebp; \
+      popl %edi; \
+      popl %esi; \
+      popl %ebx; \
+      popl %ecx; \
+      popl %edx;
+
+#define EOI \
+      movb $0x20, %al \
+      outb %al, $0x20
