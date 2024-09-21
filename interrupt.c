@@ -6,6 +6,7 @@
 #include <segment.h>
 #include <hardware.h>
 #include <io.h>
+#include <keyboard.h>
 
 #include <zeos_interrupt.h>
 

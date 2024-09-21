@@ -2,8 +2,8 @@
 # Bochs User Manual: http://bochs.sourceforge.net/doc/docbook/user/bochsrc.html
 megs: 16
 
-romimage: file=bin/BIOS-bochs-latest
-vgaromimage: file=bin/VGABIOS-elpin-2.40
+# romimage: file=bin/BIOS-bochs-latest
+# vgaromimage: file=bin/VGABIOS-elpin-2.40
 # vgaromimage: file=bin/VGABIOS-lgpl-latest
 floppya: 1_44=./zeos.bin, status=inserted
 boot: floppy
