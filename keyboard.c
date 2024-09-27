@@ -1,3 +1,5 @@
+#include "io.h"
+#include "types.h"
 #include <keyboard.h>
 
 char char_map[] = {'\0', '\0', '1',  '2',  '3',  '4',  '5',  '6',  '7',  '8',
@@ -12,7 +14,16 @@ char char_map[] = {'\0', '\0', '1',  '2',  '3',  '4',  '5',  '6',  '7',  '8',
                    '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0'};
 
 void keyboard_routine() {
-
+    Byte event = inb(0x60);
+    // make/break
+    // make: key pressed
+    // break: key released
+    Byte make = !(event >> 7); 
+    Byte code = event & 0x7f;
+    if (make) {
+        char c = char_map[code];
+        printc_xy(79, 24, c);
+    }
 }
 
 void keyboard_handler() {
