@@ -53,7 +53,7 @@
 
 #define RESTORE_ALL \
       popl %edx; \
-      popl ecx; \
+      popl %ecx; \
       popl %ebx; \
       popl %esi; \
       popl %edi; \
@@ -65,10 +65,11 @@
       popl %gs;
 
 #define EOI \
-      movb $0x20, %al \
-      outb %al, $0x20
+      movb $0x20, %al; \
+      outb %al, $0x20;
 
 
+/*
 ENTRY(system_call_handler)
       SAVE_ALL // Save the current context
       cmpl $0, %EAX // Is syscall number negative?
@@ -83,3 +84,11 @@ ENTRY(system_call_handler)
       movl %EAX, 0x18(%esp) // Change the EAX value in the stack
       RESTORE_ALL // Restore the context
       iret
+*/
+
+ENTRY(keyboard_handler)
+    SAVE_ALL // Save the current context
+    EOI
+    call keyboard_routine
+    RESTORE_ALL
+    iret

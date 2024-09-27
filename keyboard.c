@@ -25,7 +25,3 @@ void keyboard_routine() {
         printc_xy(79, 24, c);
     }
 }
-
-void keyboard_handler() {
-
-}
