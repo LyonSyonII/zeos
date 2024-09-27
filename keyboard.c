@@ -22,6 +22,17 @@ void keyboard_routine() {
     Byte code = event & 0x7f;
     if (make) {
         char c = char_map[code];
+        if (c == '\0') {
+            c = 'C';
+        }
         printc_xy(79, 24, c);
     }
+}
+
+void print_code(Byte c) {
+    while (c > 0) {
+        printc('0' + (c % 10));
+        c /= 10;
+    }
+    printc(' ');
 }
