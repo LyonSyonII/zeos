@@ -7,6 +7,7 @@
 #include <hardware.h>
 #include <io.h>
 #include <keyboard.h>
+#include <clock.h>
 
 #include <zeos_interrupt.h>
 
@@ -68,9 +69,12 @@ void setIdt()
   
   set_handlers();
 
+
+
   /* ADD INITIALIZATION CODE FOR INTERRUPT VECTOR */
 
   setInterruptHandler(33, keyboard_handler, 0);
+  setInterruptHandler(32, clock_handler, 0);
   set_idt_reg(&idtR);
 }
 

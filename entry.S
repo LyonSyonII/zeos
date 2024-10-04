@@ -88,8 +88,8 @@ ENTRY(system_call_handler)
 
 ENTRY(keyboard_handler)
       SAVE_ALL // Save the current context
-      EOI
       call keyboard_routine
+      EOI
       RESTORE_ALL
       iret
 
@@ -99,3 +99,4 @@ ENTRY(clock_handler)
       call clock_routine
       RESTORE_ALL
       iret
+      

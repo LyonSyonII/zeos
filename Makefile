@@ -37,6 +37,7 @@ SYSOBJ = \
 	hardware.o \
 	list.o \
 	keyboard.o \
+	clock.o \
 
 LIBZEOS = -L . -l zeos
 
@@ -78,6 +79,8 @@ interrupt.o:interrupt.c $(INCLUDEDIR)/interrupt.h $(INCLUDEDIR)/segment.h $(INCL
 io.o:io.c $(INCLUDEDIR)/io.h
 
 keyboard.o:keyboard.c $(INCLUDEDIR)/keyboard.h
+
+clock.o:clock.c $(INCLUDEDIR)/clock.h
 
 sched.o:sched.c $(INCLUDEDIR)/sched.h
 
