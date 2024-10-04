@@ -130,3 +130,33 @@ unsigned long get_ticks(void) {
 
         return ticks;
 }
+
+
+
+// custom defined
+void itox(int a, char *b)
+{
+  int i, i1;
+  char c;
+  
+  if (a==0) { b[0]='0'; b[1]=0; return ;}
+  
+  i=0;
+  while (a>0)
+  {
+    b[i]=(a%16)+'0';
+    if (b[i] > '9') {
+      b[i] = b[i] - ('9'+1) + 'A';
+    }
+    a=a/16;
+    i++;
+  }
+  
+  for (i1=0; i1<i/2; i1++)
+  {
+    c=b[i1];
+    b[i1]=b[i-i1-1];
+    b[i-i1-1]=c;
+  }
+  b[i]=0;
+}
