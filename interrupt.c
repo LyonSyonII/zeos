@@ -8,6 +8,8 @@
 #include <io.h>
 #include <keyboard.h>
 #include <clock.h>
+#include <utils.h>
+#include <entry.h>
 
 #include <zeos_interrupt.h>
 
@@ -72,9 +74,17 @@ void setIdt()
 
 
   /* ADD INITIALIZATION CODE FOR INTERRUPT VECTOR */
-
+  setInterruptHandler(14, page_fault_handler2, 0);
   setInterruptHandler(33, keyboard_handler, 0);
   setInterruptHandler(32, clock_handler, 0);
   set_idt_reg(&idtR);
 }
 
+
+void print_page_fault(int eip) {
+  printk("Process generates a PAGE FAULT exception at EIP: 0x");
+  char buff[7];
+  itox(eip, buff);
+  buff[5] = '\n';
+  printk(buff);
+}

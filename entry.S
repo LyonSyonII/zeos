@@ -86,6 +86,16 @@ ENTRY(system_call_handler)
       iret
 */
 
+
+ENTRY(page_fault_handler2)
+      SAVE_ALL
+      pushl 52(%esp)
+      call print_page_fault
+      call page_fault_routine
+      EOI
+      RESTORE_ALL
+      iret
+
 ENTRY(keyboard_handler)
       SAVE_ALL // Save the current context
       call keyboard_routine
