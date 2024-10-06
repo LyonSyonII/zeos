@@ -40,7 +40,7 @@ int __attribute__ ((__section__(".text.main")))
   // *p = 'x';
   // int result = addASM(99, 85);
 
-  printlntest("Hello ZeOS!");
+  printlntest("Hello ZeOS from user!");
 
   while(1) { }
 }
