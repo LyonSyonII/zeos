@@ -6,7 +6,7 @@
     - [x] Implement the keyboard handler.
     - [x] Initialize the IDT with the keyboard handler
     - [x] Enable the interrupt.
-- [] Implement the write system call.
+- [x] Implement the write system call.
     - Hem d'utilitzar `sysenter` (fer el que fa `int` manualment)
       Excepte canvi d'usuari a sistema i IDT
       Hem de guardar la direccio del handler global a registres de MSR a l'inici del sistema `wrmsr/rdmsr`
