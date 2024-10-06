@@ -34,7 +34,14 @@ ENTRY(write)
       SYSCALL(4)              # write
       
       # TODO: Handle error
+      cmpl $0, %eax           # mira si hi ha hagut error 
+      jge fi
 
+      pushl %eax
+      call set_errno          # col·loquem el valor que toqui a errno
+      add $4, %esp
+      movl $-1, %eax          # indiquem a l'usuari que hi ha hagut un error
+fi:
       popl %ebx               # restore registers
       popl %ebp
       ret

@@ -3,10 +3,44 @@
  */
 
 #include <libc.h>
-
+#include <errno.h>
 #include <types.h>
 
 int errno;
+
+
+//Array amb una llista dels missatges que imprimir amb perror (hem sembla bastant cutre pero funciona i guess)
+char *errno_message[128] = {
+  "", "", "", "", "", "", "", "",
+  "", "Bad file number", "", "", "", "Permission denied", "Bad address", "",
+  "", "", "", "", "", "", "", "",
+  "", "", "", "", "", "", "", "",
+  "", "", "", "", "", "", "Function not implemented", "",
+  "", "", "", "", "", "", "", "",
+  "", "", "", "", "", "", "", "",
+  "", "", "", "", "", "", "", "",
+  "", "", "", "", "", "", "", "",
+  "", "", "", "", "", "", "", "",
+  "", "", "", "", "", "", "", "",
+  "", "", "", "", "", "", "", "",
+  "", "", "", "", "", "", "", "",
+  "", "", "", "", "", "", "", "",
+  "", "", "", "", "", "", "", "",
+  "", "", "", "", "", "", "", "",
+};
+
+
+void set_errno(int value) {
+  write(1, "arribo aqui", 12);
+  errno = -value;
+  write(1, "2", 2);
+}
+
+void perror() {
+  char *s = errno_message[errno];
+  write(1, s, strlen(s));
+}
+
 
 void itoa(int a, char *b)
 {

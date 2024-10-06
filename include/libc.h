@@ -8,6 +8,8 @@
 
 #include "stats.h"
 
+void perror(void);
+
 int write(int fd, const char *buffer, int size);
 
 void itoa(int a, char *b);
