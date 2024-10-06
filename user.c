@@ -41,6 +41,7 @@ int __attribute__ ((__section__(".text.main")))
   // int result = addASM(99, 85);
 
   printlntest("Hello ZeOS from user!");
+  printlntest("\nIf you read this message, I'm alive");
 
   while(1) { }
 }
