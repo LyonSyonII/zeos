@@ -54,8 +54,29 @@ int sys_write(int fd, char * buffer, int size) {
     
     // TODO: Correct error code for nullptr
     if (buffer == NULL) return -1;
+
+    if (size < 0) return -1; //en teoria hem de tornar algun error aqui?
+
+    if (!access_ok(LECTURA, buffer, size)) return -14;//EFAULT
     
-    int ret = sys_write_console(buffer, size);
+    //Com que no tenim malloc, utilitzem un buffer per anar
+    //copiant chunks del missatge d'usuari
+
+    int written_chars = 0;
+
+    char buff[128];
+    int left = size;
+    int current = 0;
+    while (left > 128) {
+      copy_from_user(&buffer[current], buff, 128);
+      written_chars += sys_write_console(buff, 128);
+      current += 128;
+      left -= 128;
+    }
+
+    copy_from_user(&buffer[current], buff, left);
+    written_chars += sys_write_console(buff, left);
     
-    return ret;
+    //Tornem numero total de caracters escrits
+    return written_chars;
 }
