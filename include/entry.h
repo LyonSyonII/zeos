@@ -7,4 +7,8 @@
 
 void page_fault_handler2(int error);
 
+void syscall_handler();
+
+void writeMsr(int msr, int data);
+
 #endif  /* __ENTRY_H__ */

@@ -2,6 +2,7 @@
  * system.c - 
  */
 
+#include "entry.h"
 #include <segment.h>
 #include <types.h>
 #include <interrupt.h>
@@ -79,7 +80,10 @@ int __attribute__((__section__(".text.main")))
   setGdt(); /* Definicio de la taula de segments de memoria */
   setIdt(); /* Definicio del vector de interrupcions */
   setTSS(); /* Definicio de la TSS */
-
+  writeMsr(0x174, __KERNEL_CS);
+  writeMsr(0x175, INITIAL_ESP);
+  writeMsr(0x176, (int)&syscall_handler);
+  
   /* Initialize Memory */
   init_mm();
 
