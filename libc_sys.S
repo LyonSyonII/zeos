@@ -4,7 +4,7 @@
 # 1) [done in wrapper]
 # 2) eax <- syscall_id 
 # 3) [not necessary?]
-# 4) store return address
+# 4) store return address (sys_ret##sysid, eg: sys_ret4 when write)
 # 5) fake dynamic link
 # 6) sysenter
 # 7) remove temporal data
