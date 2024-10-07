@@ -53,9 +53,9 @@ int sys_write(int fd, char * buffer, int size) {
     if (check < 0) return check;
     
     // TODO: Correct error code for nullptr
-    if (buffer == NULL) return -1;
+    if (buffer == NULL) return -22; //EINVAL
 
-    if (size < 0) return -1; //en teoria hem de tornar algun error aqui?
+    if (size < 0) return -22; //EINVAL
 
     if (!access_ok(LECTURA, buffer, size)) return -14;//EFAULT
     
