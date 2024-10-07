@@ -10,12 +10,13 @@ int errno;
 
 
 //Array amb una llista dels missatges que imprimir amb perror (hem sembla bastant cutre pero funciona i guess)
+//Nomes estan els errors que poden sortir del write()
 char *errno_message[128] = {
   "", "", "", "", "", "", "", "",
-  "", "Bad file number", "", "", "", "Permission denied", "Bad address", "",
+  "", "Bad file number\n", "", "", "", "Permission denied\n", "Bad address\n", "",
+  "", "", "", "", "", "", "Invalid argument\n", "",
   "", "", "", "", "", "", "", "",
-  "", "", "", "", "", "", "", "",
-  "", "", "", "", "", "", "Function not implemented", "",
+  "", "", "", "", "", "", "Function not implemented\n", "",
   "", "", "", "", "", "", "", "",
   "", "", "", "", "", "", "", "",
   "", "", "", "", "", "", "", "",
@@ -31,9 +32,7 @@ char *errno_message[128] = {
 
 
 void set_errno(int value) {
-  write(1, "arribo aqui", 12);
   errno = -value;
-  write(1, "2", 2);
 }
 
 void perror() {
