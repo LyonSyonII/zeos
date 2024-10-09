@@ -8,7 +8,6 @@
 
 int errno;
 
-
 //Array amb una llista dels missatges que imprimir amb perror (hem sembla bastant cutre pero funciona i guess)
 //Nomes estan els errors que poden sortir del write()
 char *errno_message[128] = {

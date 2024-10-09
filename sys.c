@@ -15,8 +15,12 @@
 
 #include <types.h>
 
+#include <clock.h>
+
 #define LECTURA 0
 #define ESCRIPTURA 1
+
+
 
 int check_fd(int fd, int permissions)
 {
@@ -79,4 +83,11 @@ int sys_write(int fd, char * buffer, int size) {
     
     //Tornem numero total de caracters escrits
     return written_chars;
+}
+
+// `SYSCALL(10)`
+// 
+// Returns the number of clock ticks elapsed since the OS has booted.
+int sys_gettime() {
+  return zeos_ticks;
 }

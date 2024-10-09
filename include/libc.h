@@ -8,13 +8,16 @@
 
 #include "stats.h"
 
-void perror(void);
-
-int write(int fd, const char *buffer, int size);
 
 void itoa(int a, char *b);
 
 int strlen(const char *a);
+
+void perror(void);
+
+int write(int fd, const char *buffer, int size);
+
+int gettime();
 
 int getpid();
 

@@ -33,7 +33,6 @@ ENTRY(write)
       
       SYSCALL(4)              # write
       
-      # TODO: Handle error
       cmpl $0, %eax           # mira si hi ha hagut error 
       jge fi
 
