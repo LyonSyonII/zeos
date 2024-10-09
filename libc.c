@@ -75,3 +75,43 @@ int strlen(const char *a)
   return i;
 }
 
+
+/// Custom methods
+
+// Prints the provided buffer
+int print(const char* buffer) {
+  return write(1, buffer, strlen(buffer));
+}
+// Prints the provided character
+int printchar(char c) {
+  return write(1, &c, 1);
+}
+// Prints the provided integer
+int printint(int i) {
+  char itoa_buff[11];
+  itoa(i, itoa_buff);
+  return print(itoa_buff);
+}
+// Prints the provided integer with a newline at the end
+int printintln(int i) {
+  int written, err;
+  if ((written = printint(i)) < 0) return written;
+  if ((err = printchar('\n')) < 0) return err;
+  return written + 1;
+}
+// Prints the provided buffer with a newline at the end
+int println(const char* buffer) {
+  int written, err;
+  if ((written = print(buffer)) < 0) return written;
+  if ((err = printchar('\n')) < 0) return err;
+  return written + 1;
+}
+// Prints the provided buffer and the number of bytes printed
+void printlntest(const char* buffer) {
+  int written = print(buffer);
+  if (written < 0) return;
+  
+  print(" (");
+  printint(written);
+  println(" bytes)");
+}

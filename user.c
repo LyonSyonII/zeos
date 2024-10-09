@@ -6,31 +6,6 @@ int pid;
 
 // int addASM(int a, int b);
 
-int print(const char* buffer) {
-  return write(1, buffer, strlen(buffer));
-}
-int printc(char c) {
-  return write(1, &c, 1);
-}
-int println(const char* buffer) {
-  int written, err;
-  if ((written = print(buffer)) < 0) return written;
-  if ((err = printc('\n')) < 0) return err;
-  return written + 1;
-}
-
-void printlntest(const char* buffer) {
-  char itoa_buff[10];
-
-  int written = print(buffer);
-  if (written < 0) return;
-
-  itoa(written, itoa_buff);
-  print(" (");
-  print(itoa_buff);
-  println(" bytes)");
-}
-
 int __attribute__ ((__section__(".text.main")))
   main(void)
 {
@@ -40,7 +15,8 @@ int __attribute__ ((__section__(".text.main")))
   // *p = 'x';
   // int result = addASM(99, 85);
   //printlntest("test de com de llarg podem fer el missatge sense que exploti i tal perque bueno i si volem escriure un missatge molt llarg i tal que? i si ho he entes be hem d'utilitzar la funcio aquesta de copy_from_user i copy_to_user encara que funcioni sense aixo i he ficat un parche molt cutre perque no tenim malloc per fer-ho be");
-
+  
+  /// WRITE ///
   int written = 0;
 
   printlntest("Hello ZeOS from user!");
@@ -53,6 +29,13 @@ int __attribute__ ((__section__(".text.main")))
   //Test per null pointer
   written = write(1, (char*)0, 3);
   if (written < 0) perror();
+
+  /// GETTIME ///
+  printintln(gettime());
+  printintln(gettime());
+  printintln(gettime());
+  printintln(gettime());
+  printintln(gettime());
 
   while(1) { }
 }
