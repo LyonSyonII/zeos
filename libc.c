@@ -12,10 +12,10 @@ int errno;
 //Nomes estan els errors que poden sortir del write()
 char *errno_message[128] = {
   "", "", "", "", "", "", "", "",
-  "", "Bad file number\n", "", "", "", "Permission denied\n", "Bad address\n", "",
-  "", "", "", "", "", "", "Invalid argument\n", "",
+  "", "Bad file number", "", "", "", "Permission denied", "Bad address", "",
+  "", "", "", "", "", "", "Invalid argument", "",
   "", "", "", "", "", "", "", "",
-  "", "", "", "", "", "", "Function not implemented\n", "",
+  "", "", "", "", "", "", "Function not implemented", "",
   "", "", "", "", "", "", "", "",
   "", "", "", "", "", "", "", "",
   "", "", "", "", "", "", "", "",
@@ -35,8 +35,7 @@ void set_errno(int value) {
 }
 
 void perror() {
-  char *s = errno_message[errno];
-  write(1, s, strlen(s));
+  println(errno_message[errno]);
 }
 
 
@@ -105,13 +104,4 @@ int println(const char* buffer) {
   if ((written = print(buffer)) < 0) return written;
   if ((err = printchar('\n')) < 0) return err;
   return written + 1;
-}
-// Prints the provided buffer and the number of bytes printed
-void printlntest(const char* buffer) {
-  int written = print(buffer);
-  if (written < 0) return;
-  
-  print(" (");
-  printint(written);
-  println(" bytes)");
 }

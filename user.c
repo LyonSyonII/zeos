@@ -1,10 +1,16 @@
 #include <libc.h>
 
-char buff[24];
-
 int pid;
 
-// int addASM(int a, int b);
+// Prints the provided buffer and the number of bytes printed.
+void printlntest(const char* buffer) {
+  int written = print(buffer);
+  if (written < 0) return;
+  
+  print(" (");
+  printint(written);
+  println(" bytes)");
+}
 
 int __attribute__ ((__section__(".text.main")))
   main(void)
@@ -19,10 +25,10 @@ int __attribute__ ((__section__(".text.main")))
   /// WRITE ///
   int written = 0;
 
-  printlntest("Hello ZeOS from user!");
+  printlntest("\nHello ZeOS from user!");
   printlntest("\nIf you read this message, I'm alive");
 
-  //crida que falla (fd incorrecte)
+  // Crida que falla (fd incorrecte)
   written = write(0, "alo", 3); 
   if (written < 0) perror();
 
@@ -30,12 +36,12 @@ int __attribute__ ((__section__(".text.main")))
   written = write(1, (char*)0, 3);
   if (written < 0) perror();
 
-  /// GETTIME ///
-  printintln(gettime());
-  printintln(gettime());
-  printintln(gettime());
-  printintln(gettime());
-  printintln(gettime());
+  volatile int __aaa = *(volatile int*)(0);
+  __aaa = 5;
 
-  while(1) { }
+  /// GETTIME ///
+  while(1) {
+      // Descomenta per imprimir el temps
+      // printintln(gettime());
+  }
 }
