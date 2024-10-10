@@ -14,5 +14,5 @@
     - Copiem parametres a EDX, ECX, EBX
       Si en tenim massa, guardem a la pila i un dels parametres sera la direccio de la pila on es troben
 - [x] Implement the clock management.
-- [] Implement the gettime system call.
+- [x] Implement the gettime system call.
 - [x] Implement the page fault exception management.
