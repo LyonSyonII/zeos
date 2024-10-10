@@ -121,7 +121,7 @@ ENTRY(syscall_handler)
 
 ENTRY(page_fault_handler2)
       SAVE_ALL
-      pushl 52(%esp) # no estic segur que sigui aquest valor perque sempre surt el mateix
+      pushl 0x30(%esp)
       call print_page_fault
       call page_fault_routine
       EOI
