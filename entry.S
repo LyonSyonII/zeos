@@ -121,7 +121,7 @@ ENTRY(syscall_handler)
 
 ENTRY(page_fault_handler2)
       SAVE_ALL
-      pushl 0x30(%esp)
+      pushl 0x30(%esp) # send eip as a parameter
       call print_page_fault
       call page_fault_routine
       EOI

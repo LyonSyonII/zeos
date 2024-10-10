@@ -1,5 +1,5 @@
 /*
- * errno.h - Definició del punt d'entrada de les crides al sistema
+ * errno.h - Llista d'errors que pot prendre errno
  */
 
 #ifndef __ERRNO_H

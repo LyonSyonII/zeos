@@ -51,10 +51,11 @@ void sys_exit()
 }
 
 int sys_write(int fd, char * buffer, int size) {
+    
+    // CHECKS //
     int check = check_fd(fd, ESCRIPTURA);
     if (check < 0) return check;
     
-    // TODO: Correct error code for nullptr
     if (buffer == NULL) return -22; //EINVAL
 
     if (size < 0) return -22; //EINVAL
@@ -64,6 +65,7 @@ int sys_write(int fd, char * buffer, int size) {
     //Com que no tenim malloc, utilitzem un buffer per anar
     //copiant chunks del missatge d'usuari
 
+    // WRITE //
     int written_chars = 0;
 
     char buff[128];

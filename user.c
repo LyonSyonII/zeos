@@ -38,6 +38,10 @@ int __attribute__ ((__section__(".text.main")))
   written = write(1, (char*)0, 3);
   if (written < 0) perror();
 
+  // Test per mida negativa
+  written = write(1, "alo2", 0);
+  if (written < 0) perror();
+
   /// GETTIME ///
   while(1) {
       // Descomenta per imprimir el temps
