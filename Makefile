@@ -7,8 +7,8 @@
 # package dev86 is required
 AS86 = as86 -0 -a
 LD86 = ld86 -0
-BOCHS = ./bin/bochs_gdb
-BOCHS_NOGDB = ./bin/bochs_nogdb
+BOCHS = bochs
+BOCHS_NOGDB = bochs_nogdb
 
 HOSTCFLAGS = -Wall -Wstrict-prototypes -g
 HOSTCC = gcc
@@ -121,3 +121,8 @@ gdb: zeos.bin
 
 emuldbg: zeos.bin
 	$(BOCHS_NOGDB) -q -f .bochsrc
+
+# test build, clean and tar files
+entrega: zeos.bin
+	$(MAKE) clean
+	tar czf entrega.tar.gz include Makefile .bochsrc .bochsrc_gdb .gdbcmd *.ini *.a *.c *.S *.lds
