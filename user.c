@@ -39,7 +39,7 @@ int __attribute__ ((__section__(".text.main")))
   if (written < 0) perror();
 
   // Test per mida negativa
-  written = write(1, "alo2", 0);
+  written = write(1, "alo2", -1);
   if (written < 0) perror();
 
   /// GETTIME ///
