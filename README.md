@@ -1,6 +1,6 @@
 > Uriel Camí & Liam Garriga
 
-# ZEOS - FiB UPC (2024-2025)
+# ZEOS - FIB UPC (2024-2025)
 
 ## Directory Structure
 

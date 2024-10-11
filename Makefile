@@ -125,4 +125,4 @@ emuldbg: zeos.bin
 # test build, clean and tar files
 entrega: zeos.bin
 	$(MAKE) clean
-	tar czf entrega.tar.gz include Makefile .bochsrc .bochsrc_gdb .gdbcmd *.ini *.a *.c *.S *.lds
+	tar czf entrega.tar.gz README.md include Makefile .bochsrc .bochsrc_gdb .gdbcmd *.ini *.a *.c *.S *.lds
