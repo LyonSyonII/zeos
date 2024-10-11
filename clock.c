@@ -13,7 +13,5 @@ int get_clock_ticks() {
 
 void clock_routine() {
     zeos_ticks++;
-    // funciona be?
-    // printkint(zeos_ticks);
     zeos_show_clock();
 }
