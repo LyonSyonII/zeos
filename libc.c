@@ -79,11 +79,11 @@ int strlen(const char *a)
 
 // Prints the provided buffer
 int print(const char* buffer) {
-  return write(1, buffer, strlen(buffer));
+  return write(STDOUT, buffer, strlen(buffer));
 }
 // Prints the provided character
 int printchar(char c) {
-  return write(1, &c, 1);
+  return write(STDOUT, &c, 1);
 }
 // Prints the provided integer
 int printint(int i) {

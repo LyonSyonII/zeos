@@ -1,6 +1,7 @@
 /*
  * sys.c - Syscalls implementation
  */
+#include <errno.h>
 #include <devices.h>
 
 #include <utils.h>
@@ -22,8 +23,8 @@
 
 int check_fd(int fd, int permissions)
 {
-  if (fd!=1) return -9; /*EBADF*/
-  if (permissions!=ESCRIPTURA) return -13; /*EACCES*/
+  if (fd!=1) return -EBADF; /*EBADF*/
+  if (permissions!=ESCRIPTURA) return -EACCES; /*EACCES*/
   return 0;
 }
 
@@ -56,11 +57,11 @@ int sys_write(int fd, char * buffer, int size) {
     int check = check_fd(fd, ESCRIPTURA);
     if (check < 0) return check;
     
-    if (buffer == NULL) return -22; //EINVAL
+    if (buffer == NULL) return -EINVAL; //EINVAL
 
-    if (size < 0) return -22; //EINVAL
+    if (size < 0) return -EINVAL; //EINVAL
 
-    if (!access_ok(LECTURA, buffer, size)) return -14;//EFAULT
+    if (!access_ok(LECTURA, buffer, size)) return -EFAULT;//EFAULT
     
     //Com que no tenim malloc, utilitzem un buffer per anar
     //copiant chunks del missatge d'usuari

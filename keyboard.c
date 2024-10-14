@@ -28,11 +28,3 @@ void keyboard_routine() {
         printc_xy(79, 24, c);
     }
 }
-
-void print_code(Byte c) {
-    while (c > 0) {
-        printc('0' + (c % 10));
-        c /= 10;
-    }
-    printc(' ');
-}

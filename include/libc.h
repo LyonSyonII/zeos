@@ -8,6 +8,7 @@
 
 #include "stats.h"
 
+#define STDOUT 1
 
 void itoa(int a, char *b);
 

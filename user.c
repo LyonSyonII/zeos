@@ -35,11 +35,11 @@ int __attribute__ ((__section__(".text.main")))
   if (written < 0) perror();
 
   // Test per null pointer
-  written = write(1, (char*)0, 3);
+  written = write(STDOUT, (char*)0, 3);
   if (written < 0) perror();
 
   // Test per mida negativa
-  written = write(1, "alo2", -1);
+  written = write(STDOUT, "alo2", -1);
   if (written < 0) perror();
 
   /// GETTIME ///
