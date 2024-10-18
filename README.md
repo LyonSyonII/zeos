@@ -60,6 +60,11 @@
 	- no ho hem de fer a la interrupcio de rellotge
 		- millor fer-ho a la interrupcio de teclat per debugar
 - task_switch(new)
+  - modifiquem cr3, tss i msr
+  - guardem registres abans de canviar de proces
+    - esi, edi, ebx
+  - canviem esp a nou proces
+  - restaurem quan tornem
 
 ### E1
 - [x] Complete Zeos code.
