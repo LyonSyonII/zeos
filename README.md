@@ -25,6 +25,43 @@
 - utils.c: copy_from_XXX, access_ok, itox, ...
 
 ## TO-DO
+
+- [ ] Adapt the task_struct definition.
+- [ ] Initialize a free queue.
+- [ ] Initialize a ready queue.
+- [ ] Implement the initial processes initialization.
+- [ ] Implement the task_switch function.
+- [ ] Implement the inner_task_switch function.
+- [ ] Implement the getpid system call.
+- [ ] Implement the fork system call.
+- [ ] Implement process scheduling.
+- [ ] Implement the exit system call.
+- [ ] Implement the block system call.
+- [ ] Implement the unblock system call
+
+### Notes
+- modificar task struct (pcb)
+	- 10 pcbs (task_struct tasks[10])
+- freequeue (pcbs lliures)
+- readyqueue (processos en estat de ready)
+- inicialitzar processos
+	- init: proces d'usuari 
+		- init_mm (inicialitza la mmu ...)
+			- cr3 (Apunta a DIR, no TP)
+			- tants DIR com processos (i TP)
+				- Per tant 10 DIR i 10 TP
+		- set_user_pages()
+	- idle: proces a executar quan no n'hi ha cap a la readyqueue
+	- init -> idle -> init
+	- init -> init
+
+- scheduler
+	- cada cert temps canviem de proces (task_switch)
+	- no ho hem de fer a la interrupcio de rellotge
+		- millor fer-ho a la interrupcio de teclat per debugar
+- task_switch(new)
+
+### E1
 - [x] Complete Zeos code.
     - [x] Implement the macro RESTORE_ALL.
     - [x] Implement the macro EOI.
