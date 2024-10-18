@@ -26,9 +26,9 @@
 
 ## TO-DO
 
-- [ ] Adapt the task_struct definition.
-- [ ] Initialize a free queue.
-- [ ] Initialize a ready queue.
+- [x] Adapt the task_struct definition.
+- [x] Initialize a free queue.
+- [x] Initialize a ready queue.
 - [ ] Implement the initial processes initialization.
 - [ ] Implement the task_switch function.
 - [ ] Implement the inner_task_switch function.
