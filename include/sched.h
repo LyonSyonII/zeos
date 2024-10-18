@@ -8,6 +8,7 @@
 #include <list.h>
 #include <types.h>
 #include <mm_address.h>
+#include <types.h>
 
 #define NR_TASKS      10
 #define KERNEL_STACK_SIZE	1024
@@ -55,5 +56,14 @@ void sched_next_rr();
 void update_process_state_rr(struct task_struct *t, struct list_head *dest);
 int needs_sched_rr();
 void update_sched_data_rr();
+
+
+// custom code
+
+/// Free spaces in the tasks list.
+extern struct list_head freequeue;
+extern struct list_head readyqueue;
+
+void add_free_tasks_to_queue();
 
 #endif  /* __SCHED_H__ */
