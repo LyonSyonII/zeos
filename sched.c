@@ -2,6 +2,7 @@
  * sched.c - initializes struct for task 0 anda task 1
  */
 
+#include "list.h"
 #include <sched.h>
 #include <mm.h>
 #include <io.h>
@@ -9,7 +10,7 @@
 union task_union task[NR_TASKS]
   __attribute__((__section__(".data.task")));
 
-#if 0
+#if 1
 struct task_struct *list_head_to_task_struct(struct list_head *l)
 {
   return list_entry( l, struct task_struct, list);
@@ -65,6 +66,9 @@ void init_task1(void)
 
 void init_sched()
 {
+	INIT_LIST_HEAD(&freequeue);
+	add_free_tasks_to_queue();
+	INIT_LIST_HEAD(&readyqueue);
 
 }
 
@@ -79,3 +83,16 @@ struct task_struct* current()
   return (struct task_struct*)(ret_value&0xfffff000);
 }
 
+
+//custom code
+
+struct list_head freequeue;
+
+struct list_head readyqueue;
+
+void add_free_tasks_to_queue() {
+
+	for (int i = 0; i < NR_TASKS; ++i) {
+		list_add(&task[i].task.list, &freequeue);
+	}
+}
