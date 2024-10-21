@@ -59,10 +59,19 @@ ENTRY(gettime)
       ret
 
 ENTRY(getpid)
-      pushl %ebp
+      pushl %ebp              # dynamic link
       movl %esp, %ebp
 
-      SYSCALL(20)
+      SYSCALL(20)             # getpid
+
+      popl %ebp
+      ret
+
+ENTRY(fork)
+      pushl %ebp              # dynamic link
+      movl %esp, %ebp
+
+      SYSCALL(2)              # fork
 
       popl %ebp
       ret
