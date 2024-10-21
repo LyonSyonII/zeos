@@ -30,6 +30,9 @@ int __attribute__ ((__section__(".text.main")))
   // Uncomment to test PAGE FAULT
   // char* p = 0; *p = 'x';
 
+  //Test per getpid (en teoria funciona)
+  printint(getpid());
+
   // Crida que falla (fd incorrecte)
   written = write(0, "alo", 3); 
   if (written < 0) perror();

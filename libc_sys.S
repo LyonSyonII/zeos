@@ -57,3 +57,12 @@ ENTRY(gettime)
       
       popl %ebp
       ret
+
+ENTRY(getpid)
+      pushl %ebp
+      movl %esp, %ebp
+
+      SYSCALL(20)
+
+      popl %ebp
+      ret
