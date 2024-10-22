@@ -62,6 +62,8 @@ void update_sched_data_rr();
 
 // custom code
 
+extern struct task_struct *idle_task;
+
 /// Free spaces in the tasks list.
 extern struct list_head freequeue;
 extern struct list_head readyqueue;
