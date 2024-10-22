@@ -2,6 +2,7 @@
  * sched.c - initializes struct for task 0 anda task 1
  */
 
+#include "entry.h"
 #include "list.h"
 #include "types.h"
 #include <sched.h>
@@ -60,7 +61,7 @@ void init_idle (void)
 	struct list_head *lh = list_first(&freequeue);
 	list_del(lh);
 	
-	union task_union * tu = list_entry(lh, union task_union, task.list); //agafem la task union que correspon
+	union task_union *tu = list_entry(lh, union task_union, task.list); //agafem la task union que correspon
 	tu->task.PID = 0; //assignem PID corresponent
 
 	allocate_DIR(&tu->task); // assignem un nou directori on guardar les adreces
@@ -75,7 +76,20 @@ void init_idle (void)
 
 void init_task1(void)
 {
-	
+	struct list_head *lh = list_first(&freequeue);
+	list_del(lh);
+
+	union task_union *tu = list_entry(lh, union task_union, task.list);
+	tu->task.PID = 1;
+
+	allocate_DIR(&tu->task);
+
+	set_user_pages(&tu->task);
+
+	writeMsr(0x175, (DWord)&tu->stack[1024]);
+	tss.esp0 = (DWord)&tu->stack[1024];
+
+	set_cr3(tu->task.dir_pages_baseAddr);
 }
 
 
