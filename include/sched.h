@@ -62,6 +62,12 @@ void update_sched_data_rr();
 
 // custom code
 
+
+extern void save_esi_edx_ebx();
+extern void inner_task_switch(union task_union * new);
+extern void restore_esi_edx_ebx();
+
+
 extern struct task_struct *idle_task;
 
 /// Free spaces in the tasks list.

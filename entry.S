@@ -130,8 +130,8 @@ ENTRY(page_fault_handler2)
 
 ENTRY(keyboard_handler)
       SAVE_ALL
-      call keyboard_routine
       EOI
+      call keyboard_routine
       RESTORE_ALL
       iret
 

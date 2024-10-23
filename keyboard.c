@@ -1,4 +1,5 @@
 #include "io.h"
+#include "sched.h"
 #include "types.h"
 #include <keyboard.h>
 
@@ -22,6 +23,9 @@ void keyboard_routine() {
     Byte code = event & 0x7f;
     if (make) {
         char c = char_map[code];
+        if (c == 'i') task_switch(idle_task); // idle task (duh)
+        else if (c == 'u') task_switch(&task[8]); // init task
+
         if (c == '\0') {
             c = 'C';
         }

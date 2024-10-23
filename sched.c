@@ -9,6 +9,7 @@
 #include <mm.h>
 #include <io.h>
 
+
 union task_union task[NR_TASKS]
   __attribute__((__section__(".data.task")));
 
@@ -58,13 +59,13 @@ void cpu_idle(void)
 
 void init_idle (void)
 {
-	struct list_head *lh = list_first(&freequeue);
-	list_del(lh);
+	struct list_head *lh = list_first(&freequeue); //Agafem la primera entrada de la freequeue
+	list_del(lh); //Borrem aquesta entrada de la freequeue
 	
 	union task_union *tu = list_entry(lh, union task_union, task.list); //agafem la task union que correspon
 	tu->task.PID = 0; //assignem PID corresponent
 
-	allocate_DIR(&tu->task); // assignem un nou directori on guardar les adreces
+	allocate_DIR(&tu->task); //assignem un nou directori on guardar les adreces
 
 	tu->stack[1023] = (DWord)cpu_idle; // @return
 	tu->stack[1022] = 0; // ebp = 0
@@ -76,20 +77,20 @@ void init_idle (void)
 
 void init_task1(void)
 {
-	struct list_head *lh = list_first(&freequeue);
-	list_del(lh);
+	struct list_head *lh = list_first(&freequeue); //Agafem la primera entrada de la freequeue
+	list_del(lh); //Borrem aquesta entrada de la freequeue
 
-	union task_union *tu = list_entry(lh, union task_union, task.list);
-	tu->task.PID = 1;
+	union task_union *tu = list_entry(lh, union task_union, task.list); //agafem la task_union que correspon
+	tu->task.PID = 1; //assignem PID que toca
 
-	allocate_DIR(&tu->task);
+	allocate_DIR(&tu->task); //assignem taula de directoris
 
-	set_user_pages(&tu->task);
+	set_user_pages(&tu->task); //Assignem les pagines fisiques necessaries per guardar dades i codi del process
 
-	writeMsr(0x175, (DWord)&tu->stack[1024]);
-	tss.esp0 = (DWord)&tu->stack[1024];
+	tss.esp0 = (DWord)&tu->stack[1024]; //escribim a TSS l'adreça del stack
+	writeMsr(0x175, (DWord)&tu->stack[1024]); //escribim a Msr 0x175 l'adreça del stack
 
-	set_cr3(tu->task.dir_pages_baseAddr);
+	set_cr3(tu->task.dir_pages_baseAddr); //Col·loquem a cr3 l'adreça de la taula de directoris del process
 }
 
 
@@ -114,6 +115,21 @@ struct task_struct* current()
 
 
 //custom code
+
+
+void task_switch(union task_union*t) {
+	save_esi_edx_ebx();
+
+	printk("pre_inner ");
+	printkint(current()->PID);
+
+	inner_task_switch(t);
+
+	printk("post_inner ");
+	printkint(current()->PID);
+	
+	restore_esi_edx_ebx();
+}
 
 struct task_struct *idle_task;
 

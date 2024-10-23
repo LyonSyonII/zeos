@@ -38,6 +38,7 @@ SYSOBJ = \
 	list.o \
 	keyboard.o \
 	clock.o \
+	schedA.o \
 
 LIBZEOS = -L . -l zeos
 
@@ -81,6 +82,9 @@ io.o:io.c $(INCLUDEDIR)/io.h
 keyboard.o:keyboard.c $(INCLUDEDIR)/keyboard.h
 
 clock.o:clock.c $(INCLUDEDIR)/clock.h
+
+schedA.s: sched.S $(INCLUDEDIR)/asm.h
+	$(CPP) $(ASMFLAGS) -o $@ $<
 
 sched.o:sched.c $(INCLUDEDIR)/sched.h
 
