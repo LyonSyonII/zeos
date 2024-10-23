@@ -87,8 +87,8 @@ void init_task1(void)
 
 	set_user_pages(&tu->task); //Assignem les pagines fisiques necessaries per guardar dades i codi del process
 
-	tss.esp0 = (DWord)&tu->stack[1024]; //escribim a TSS l'adreça del stack
-	writeMsr(0x175, (DWord)&tu->stack[1024]); //escribim a Msr 0x175 l'adreça del stack
+	tss.esp0 = KERNEL_ESP(tu); //escribim a TSS l'adreça del stack
+	writeMsr(0x175, KERNEL_ESP(tu)); //escribim a Msr 0x175 l'adreça del stack
 
 	set_cr3(tu->task.dir_pages_baseAddr); //Col·loquem a cr3 l'adreça de la taula de directoris del process
 }

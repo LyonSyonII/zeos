@@ -62,6 +62,7 @@ void update_sched_data_rr();
 
 // custom code
 
+extern TSS tss;
 
 extern void save_esi_edx_ebx();
 extern void inner_task_switch(union task_union * new);
