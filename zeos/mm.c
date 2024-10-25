@@ -75,16 +75,18 @@ for (j=0; j< NR_TASKS; j++) {
 
 
 /* Initialize pages for initial process (user pages) */
-void set_user_pages( struct task_struct *task )
+int set_user_pages( struct task_struct *task )
 {
- int pag; 
- int new_ph_pag;
- page_table_entry * process_PT =  get_PT(task);
+  int pag; 
+  int new_ph_pag;
+  page_table_entry * process_PT =  get_PT(task);
 
 
   /* CODE */
   for (pag=0;pag<NUM_PAG_CODE;pag++){
-	new_ph_pag=alloc_frame();
+	  new_ph_pag=alloc_frame();
+    if (new_ph_pag < 0) return new_ph_pag;
+
   	process_PT[PAG_LOG_INIT_CODE+pag].entry = 0;
   	process_PT[PAG_LOG_INIT_CODE+pag].bits.pbase_addr = new_ph_pag;
   	process_PT[PAG_LOG_INIT_CODE+pag].bits.user = 1;
@@ -93,7 +95,9 @@ void set_user_pages( struct task_struct *task )
   
   /* DATA */ 
   for (pag=0;pag<NUM_PAG_DATA;pag++){
-	new_ph_pag=alloc_frame();
+	  new_ph_pag=alloc_frame();
+    if (new_ph_pag < 0) return new_ph_pag;
+
   	process_PT[PAG_LOG_INIT_DATA+pag].entry = 0;
   	process_PT[PAG_LOG_INIT_DATA+pag].bits.pbase_addr = new_ph_pag;
   	process_PT[PAG_LOG_INIT_DATA+pag].bits.user = 1;
