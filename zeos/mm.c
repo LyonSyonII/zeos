@@ -2,6 +2,7 @@
  * mm.c - Memory Management: Paging & segment memory management
  */
 
+
 #include <types.h>
 #include <mm.h>
 #include <segment.h>
@@ -72,7 +73,15 @@ for (j=0; j< NR_TASKS; j++) {
 }
 }
 
-
+int dealloc_user_pages(page_table_entry * process_PT, int code_end, int data_end, int error) {
+  for (int pag = 0; pag < code_end; ++pag) {
+    free_frame(process_PT[PAG_LOG_INIT_CODE+pag].bits.pbase_addr);
+  }
+  for (int pag = 0; pag < data_end; ++pag) {
+    free_frame(process_PT[PAG_LOG_INIT_DATA+pag].bits.pbase_addr);
+  }
+  return error;
+}
 
 /* Initialize pages for initial process (user pages) */
 int set_user_pages( struct task_struct *task )
@@ -85,7 +94,7 @@ int set_user_pages( struct task_struct *task )
   /* CODE */
   for (pag=0;pag<NUM_PAG_CODE;pag++){
 	  new_ph_pag=alloc_frame();
-    if (new_ph_pag < 0) return new_ph_pag;
+    if (new_ph_pag < 0) return dealloc_user_pages(process_PT, pag, 0, new_ph_pag);
 
   	process_PT[PAG_LOG_INIT_CODE+pag].entry = 0;
   	process_PT[PAG_LOG_INIT_CODE+pag].bits.pbase_addr = new_ph_pag;
@@ -96,7 +105,7 @@ int set_user_pages( struct task_struct *task )
   /* DATA */ 
   for (pag=0;pag<NUM_PAG_DATA;pag++){
 	  new_ph_pag=alloc_frame();
-    if (new_ph_pag < 0) return new_ph_pag;
+    if (new_ph_pag < 0) dealloc_user_pages(process_PT, NUM_PAG_CODE, pag, new_ph_pag);
 
   	process_PT[PAG_LOG_INIT_DATA+pag].entry = 0;
   	process_PT[PAG_LOG_INIT_DATA+pag].bits.pbase_addr = new_ph_pag;
