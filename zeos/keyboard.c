@@ -24,7 +24,7 @@ void keyboard_routine() {
     if (make) {
         char c = char_map[code];
         if (c == 'i') task_switch(idle_task); // idle task (duh)
-        else if (c == 'u') task_switch(&task[8]); // init task
+        else if (c == 'u') task_switch(&task[1]); // init task
 
         if (c == '\0') {
             c = 'C';
