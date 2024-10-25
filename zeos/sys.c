@@ -1,6 +1,7 @@
 /*
  * sys.c - Syscalls implementation
  */
+#include "list.h"
 #include <errno.h>
 #include <devices.h>
 
@@ -43,6 +44,18 @@ int sys_fork()
   int PID=-1;
 
   // creates the child process
+  if (list_empty(&freequeue)) return -EPERM; //CANVIAR
+  union task_union *child_tu = list_entry(list_first(&freequeue), union task_union, task.list);
+
+  union task_union *parent_tu = current();
+
+  copy_data((void*)parent_tu, (void*)child_tu, 4096);
+  
+  allocate_DIR(&child_tu->task);
+
+  if (set_user_pages(&child_tu->task) < 0) return ENOMEM;
+
+  page_table_entry *pte = get_PT(&child_tu->task);
   
   return PID;
 }
