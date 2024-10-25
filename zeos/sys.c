@@ -39,6 +39,20 @@ int sys_getpid()
 	return current()->PID;
 }
 
+int undo_fork(int step, union task_union *tu, int error) {
+  switch (step) {
+    case 0:
+
+    case 1:
+
+    case 2:
+
+      list_add(&tu->task.list, &freequeue);
+  }
+  return error;
+}
+
+
 int sys_fork()
 {
   int PID=-1;
@@ -55,8 +69,32 @@ int sys_fork()
 
   if (set_user_pages(&child_tu->task) < 0) return ENOMEM;
 
-  page_table_entry *pte = get_PT(&child_tu->task);
+  page_table_entry *cpte = get_PT(&child_tu->task);
   
+  page_table_entry *ppte = get_PT(&parent_tu->task);
+
+  /*
+  for (int pag = 0; pag < NUM_PAG_CODE; ++pag) {
+    set_ss_pag(ppte, pag+PAG_LOG_INIT_CODE, cpte->bits.pbase_addr + PAG_LOG_INIT_CODE + );
+  }*/
+
+
+  for (int pag = 0; pag < NUM_PAG_CODE; ++pag) {
+    set_ss_pag(cpte, pag + PAG_LOG_INIT_CODE, ppte->bits.pbase_addr + sizeof(page_table_entry)*(pag+PAG_LOG_INIT_CODE));
+  }
+
+
+  int temp_frames[NUM_PAG_DATA];
+
+  for (int pag = 0; pag < NUM_PAG_DATA; ++pag) {
+    if ((temp_frames[pag] = alloc_frame()) < 0) {
+      
+    }
+    set_ss_pag(ppte, temp_frames[pag], cpte->bits.pbase_addr + sizeof(page_table_entry)*(pag+PAG_LOG_INIT_DATA));
+  }
+
+
+
   return PID;
 }
 
