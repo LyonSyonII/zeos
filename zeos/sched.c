@@ -123,6 +123,24 @@ void task_switch(union task_union*t) {
 	printk("pre_inner ");
 	printkint(current()->PID);
 
+/*  movl 8(%ebp), %eax # eax = &new
+    addl $0x1000, %eax # %eax = &new.stack[1024]
+
+    movl %eax, tss+4 # tss.esp0 = &new.stack[1024]
+
+    pushl %eax
+    pushl $0x175
+    call writeMsr # Msr[0x175] = &new.stack[1024]
+    addl $8, %esp
+
+    movl 8(%ebp), %eax
+    pushl 4(%eax) # push new.task.dir_pages_baseAddr
+    call set_cr3 # cr3 = new task dir table
+    addl $4, %esp */
+	tss.esp0 = &t->stack[1024];
+	writeMsr(0x175, &t->stack[1024]);
+	set_cr3(t->task.dir_pages_baseAddr);
+
 	inner_task_switch(t);
 
 	printk("post_inner ");
@@ -140,6 +158,6 @@ struct list_head readyqueue;
 void add_free_tasks_to_queue() {
 
 	for (int i = 0; i < NR_TASKS; ++i) {
-		list_add(&task[i].task.list, &freequeue);
+		list_add_tail(&task[i].task.list, &freequeue);
 	}
 }
