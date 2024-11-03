@@ -82,11 +82,11 @@ int sys_fork()
   page_table_entry *child_PT = get_PT(&child_task->task);
   page_table_entry *parent_PT = get_PT(parent_task);
 
-  // copy kernel pages
+/*   // copy kernel pages
   for (int pag = 0; pag < NUM_PAG_KERNEL; ++pag) {
     // PAG_LOG_INIT_KERNEL == 1
     child_PT[1+pag].entry = parent_PT[1+pag].entry;
-  }
+  } */
 
   // copy code pages
   for (int pag = 0; pag < NUM_PAG_CODE; ++pag) {
@@ -103,7 +103,7 @@ int sys_fork()
     set_ss_pag(child_PT, PAG_LOG_INIT_DATA+pag, new_ph_pag);
     // map child page to parent empty page
     // parent_data[EMPTY_DATA_PAG] = child_data[pag];
-    int EMPTY_DATA_PAG = PAG_LOG_INIT_DATA + NUM_PAG_DATA + pag;
+    int EMPTY_DATA_PAG = PAG_LOG_INIT_DATA + NUM_PAG_DATA + NUM_PAG_CODE + pag;
     set_ss_pag(parent_PT, EMPTY_DATA_PAG, new_ph_pag);
     
     // copy data from parent page to mapped child page
@@ -118,8 +118,6 @@ int sys_fork()
   // flush TLB
   set_cr3(get_DIR(parent_task));
   PID = get_new_PID();
-
-  printk("Assigned pages!\n");
   
   // set new PID
   child_task->task.PID = PID;
@@ -131,8 +129,6 @@ int sys_fork()
   child_task->stack[(((child_task->task.kernel_esp)%sizeof(union task_union))/sizeof(DWord))] = KERNEL_ESP(child_task);
   
   list_add_tail(&child_task->task.list, &readyqueue);
-
-  printk("Things done, returning...\n");
 
   return PID;
 }
