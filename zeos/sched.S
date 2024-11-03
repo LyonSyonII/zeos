@@ -1,6 +1,9 @@
 #include <asm.h>
 #include <segment.h>
 
+ENTRY (get_ebp)
+    movl %ebp, %eax
+    ret;
 
 ENTRY (save_esi_edx_ebx)
     popl %eax # @ret -> %eax

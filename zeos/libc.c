@@ -11,8 +11,8 @@ int errno;
 //Array amb una llista dels missatges que imprimir amb perror 
 //Nomes estan els errors que poden sortir del write()
 char *errno_message[128] = {
-  "", "", "", "", "", "", "", "",
-  "", "Bad file number", "", "", "", "Permission denied", "Bad address", "",
+  "", "EPERM", "", "", "", "", "", "",
+  "", "Bad file number", "", "", "ENOMEM", "Permission denied", "Bad address", "",
   "", "", "", "", "", "", "Invalid argument", "",
   "", "", "", "", "", "", "", "",
   "", "", "", "", "", "", "Function not implemented", "",

@@ -16,5 +16,8 @@ void printc_xy(Byte x, Byte y, char c);
 void printk(char *string);
 
 void printkint(int i);
+void printkintln(int i);
+void printkhex(int i);
+void printkhexln(int i);
 
 #endif  /* __IO_H__ */

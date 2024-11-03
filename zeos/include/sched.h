@@ -75,6 +75,11 @@ extern struct task_struct *idle_task;
 extern struct list_head freequeue;
 extern struct list_head readyqueue;
 
-void add_free_tasks_to_queue();
+void init_freequeue();
+void switch_to_next_task();
+
+int get_new_PID();
+
+int* get_ebp();
 
 #endif  /* __SCHED_H__ */

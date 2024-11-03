@@ -23,8 +23,24 @@ void keyboard_routine() {
     Byte code = event & 0x7f;
     if (make) {
         char c = char_map[code];
-        if (c == 'i') task_switch(idle_task); // idle task (duh)
-        else if (c == 'u') task_switch(&task[1]); // init task
+        switch (char_map[code]) {
+            case 'i': {
+                printc_xy(79, 0, c);
+                // idle task
+                task_switch((union task_union*)idle_task);
+                break;
+            }
+            case 'u': {
+                printc_xy(79, 0, c);
+                // init task
+                task_switch(&task[1]);
+                break;
+            }
+            case 'n': {
+                switch_to_next_task();
+                break;
+            }
+        }
 
         if (c == '\0') {
             c = 'C';

@@ -13,12 +13,11 @@
 union task_union task[NR_TASKS]
   __attribute__((__section__(".data.task")));
 
-#if 1
+
 struct task_struct *list_head_to_task_struct(struct list_head *l)
 {
   return list_entry( l, struct task_struct, list);
 }
-#endif
 
 extern struct list_head blocked;
 
@@ -69,7 +68,6 @@ void init_idle (void)
 
 	tu->stack[1023] = (DWord)cpu_idle; // @return
 	tu->stack[1022] = 0; // ebp = 0
-
 	tu->task.kernel_esp = (DWord)&tu->stack[1022]; // assignem la posició del esp que apunta a dalt de tot de la pila de sistema
 
 	idle_task = &tu->task; //col·loquem a idle_task l'adreça del task_struct de idle
@@ -79,27 +77,25 @@ void init_task1(void)
 {
 	struct list_head *lh = list_first(&freequeue); //Agafem la primera entrada de la freequeue
 	list_del(lh); //Borrem aquesta entrada de la freequeue
-
-	union task_union *tu = list_entry(lh, union task_union, task.list); //agafem la task_union que correspon
-	tu->task.PID = 1; //assignem PID que toca
-
-	allocate_DIR(&tu->task); //assignem taula de directoris
-
-	set_user_pages(&tu->task); //Assignem les pagines fisiques necessaries per guardar dades i codi del process
-
-	tss.esp0 = KERNEL_ESP(tu); //escribim a TSS l'adreça del stack
-	writeMsr(0x175, KERNEL_ESP(tu)); //escribim a Msr 0x175 l'adreça del stack
-
-	set_cr3(tu->task.dir_pages_baseAddr); //Col·loquem a cr3 l'adreça de la taula de directoris del process
+	
+	union task_union *task1 = list_entry(lh, union task_union, task.list); //agafem la task_union que correspon
+	task1->task.PID = 1; //assignem PID que toca
+	
+	allocate_DIR(&task1->task); //assignem taula de directoris
+	set_user_pages(&task1->task); //Assignem les pagines fisiques necessaries per guardar dades i codi del process
+	
+	tss.esp0 = KERNEL_ESP(task1); //escribim a TSS l'adreça del stack
+	task1->task.kernel_esp = KERNEL_ESP(task1);
+	writeMsr(0x175, KERNEL_ESP(task1)); //escribim a Msr 0x175 l'adreça del stack
+	
+	set_cr3(task1->task.dir_pages_baseAddr); //Col·loquem a cr3 l'adreça de la taula de directoris del process
 }
 
 
 void init_sched()
 {
-	INIT_LIST_HEAD(&freequeue);
-	add_free_tasks_to_queue();
+	init_freequeue();
 	INIT_LIST_HEAD(&readyqueue);
-
 }
 
 struct task_struct* current()
@@ -137,8 +133,8 @@ void task_switch(union task_union*t) {
     pushl 4(%eax) # push new.task.dir_pages_baseAddr
     call set_cr3 # cr3 = new task dir table
     addl $4, %esp */
-	tss.esp0 = &t->stack[1024];
-	writeMsr(0x175, &t->stack[1024]);
+	tss.esp0 = (DWord)&t->stack[1024];
+	writeMsr(0x175, (DWord)&t->stack[1024]);
 	set_cr3(t->task.dir_pages_baseAddr);
 
 	inner_task_switch(t);
@@ -149,15 +145,36 @@ void task_switch(union task_union*t) {
 	restore_esi_edx_ebx();
 }
 
+void idle_switch() {
+	task_switch((union task_union*)idle_task);
+}
+
+void switch_to_next_task() {
+	if (list_empty(&readyqueue)) {
+		return idle_switch();
+	}
+	struct list_head *first = list_first(&readyqueue);
+	list_del(first);
+	union task_union *first_entry = list_entry(first, union task_union, task.list);
+	if (current() != idle_task) {
+		list_add_tail(&current()->list, &readyqueue);
+	}
+	task_switch(first_entry);
+}
+
+int get_new_PID() {
+  	static int PID = 1;
+	PID += 1;
+	return PID;
+}
+
 struct task_struct *idle_task;
-
 struct list_head freequeue;
-
 struct list_head readyqueue;
 
-void add_free_tasks_to_queue() {
-
-	for (int i = 0; i < NR_TASKS; ++i) {
+void init_freequeue() {
+	INIT_LIST_HEAD(&freequeue);
+	for (int i = 0; i < NR_TASKS; i++) {
 		list_add_tail(&task[i].task.list, &freequeue);
 	}
 }

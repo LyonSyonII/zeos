@@ -2,6 +2,7 @@
  * io.c - 
  */
 
+#include "utils.h"
 #include <io.h>
 
 #include <types.h>
@@ -89,10 +90,33 @@ void __itoa(int a, char *b)
   }
   b[i]=0;
 }
+
+void printkln(char* string) {
+  printk(string);
+  printc('\n');
+}
+
 // Prints the provided integer
 void printkint(int i) {
   char itoa_buff[11];
   __itoa(i, itoa_buff);
   printk(itoa_buff);
-  printk("\n");
+}
+
+void printkintln(int i) {
+  printkint(i);
+  printc('\n');
+}
+
+// Prints the provided integer in hexadecimal
+void printkhex(int i) {
+  char buf[11];
+  itox(i, buf);
+  printk(buf);
+}
+
+// Prints the provided integer in hexadecimal plus a newline
+void printkhexln(int i) {
+  printkhex(i);
+  printc('\n');
 }
