@@ -1,6 +1,9 @@
+#include "io.h"
 #include <libc.h>
 
 int pid;
+
+int written;
 
 // Prints the provided buffer and the number of bytes printed.
 void printlntest(const char* buffer) {
@@ -21,7 +24,6 @@ int __attribute__ ((__section__(".text.main")))
 
   
   /// WRITE ///
-  int written = 0;
 
   printlntest("\nHello ZeOS from user!");
   printlntest("\nIf you read this message, I'm alive");
@@ -31,7 +33,7 @@ int __attribute__ ((__section__(".text.main")))
   // char* p = 0; *p = 'x';
 
   //Test per getpid (en teoria funciona)
-  printint(getpid());
+  printintln(getpid());
 
   // Crida que falla (fd incorrecte)
   written = write(0, "alo", 3); 
@@ -44,6 +46,28 @@ int __attribute__ ((__section__(".text.main")))
   // Test per mida negativa
   written = write(STDOUT, "alo2", -1);
   if (written < 0) perror();
+
+
+  // TEST fork
+  written = 1132;
+
+  for (int i = 0; i < 10; ++i) {
+    int ret = fork();
+    
+    if (ret > 0) {
+      print("soc el pare. PID fill: ");
+      printintln(ret);
+      ++written;
+    }else if (ret == 0) {
+      println("soc el fill");
+      break;
+    } else {
+      print("error ");
+      printintln(i);
+    }
+  }
+
+  printintln(written);
 
   /// GETTIME ///
   while(1) {

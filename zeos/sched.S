@@ -2,6 +2,11 @@
 #include <segment.h>
 
 
+ENTRY (get_ebp)
+    movl %ebp, %eax
+    ret
+
+
 ENTRY (save_esi_edx_ebx)
     popl %eax # @ret -> %eax
     
@@ -31,9 +36,9 @@ ENTRY (inner_task_switch)
     movl %esp, %eax
     andl $0xfffff000, %eax # &current
     movl %ebp, 8(%eax) # ebp -> current.kernel_esp
-    
+
     movl 8(%ebp), %eax # &new.task_struct -> %eax
     movl 8(%eax), %esp # esp <- new.kernel_esp
 
-    popl %ebp
+    popl %ebp    
     ret

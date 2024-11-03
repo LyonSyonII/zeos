@@ -62,11 +62,16 @@ void update_sched_data_rr();
 
 // custom code
 
-extern TSS tss;
+#define MAX_PIDS 1000 //per exemple
+
 
 extern void save_esi_edx_ebx();
 extern void inner_task_switch(union task_union * new);
 extern void restore_esi_edx_ebx();
+extern int ret_from_fork();
+extern int get_ebp();
+
+extern int nextPID();
 
 
 extern struct task_struct *idle_task;

@@ -5,10 +5,14 @@
 #include "entry.h"
 #include "list.h"
 #include "types.h"
+#include "utils.h"
 #include <sched.h>
 #include <mm.h>
-#include <io.h>
+#include <io.h> 
 
+
+int next_pid; //next pid que s'assignara al fer fork
+int assigned_pids;
 
 union task_union task[NR_TASKS]
   __attribute__((__section__(".data.task")));
@@ -100,6 +104,8 @@ void init_sched()
 	add_free_tasks_to_queue();
 	INIT_LIST_HEAD(&readyqueue);
 
+	next_pid = get_ticks();
+	assigned_pids = 2;
 }
 
 struct task_struct* current()
@@ -116,12 +122,28 @@ struct task_struct* current()
 
 //custom code
 
+int nextPID() {
+	if (assigned_pids++ < MAX_PIDS) { //Si encara no hem arribat al limit de pids incrementem el next_pid i el retornem
+		return next_pid++;
+
+	} else { //Si hem superat el limit de pids buscarem algun disponible (si no hi ha cap retornem error)
+		int i = 0;
+		char trobat = 0;
+		while(!trobat && i < MAX_PIDS) {
+			
+		}
+
+		if (trobat) next_pid = i;
+	}
+}
+
 
 void task_switch(union task_union*t) {
 	save_esi_edx_ebx();
 
-	printk("pre_inner ");
-	printkint(current()->PID);
+	// printk("pre_inner ");
+	// printkint(current()->PID);
+
 
 /*  movl 8(%ebp), %eax # eax = &new
     addl $0x1000, %eax # %eax = &new.stack[1024]
@@ -139,15 +161,22 @@ void task_switch(union task_union*t) {
     addl $4, %esp */
 	tss.esp0 = &t->stack[1024];
 	writeMsr(0x175, &t->stack[1024]);
+	
 	set_cr3(t->task.dir_pages_baseAddr);
 
 	inner_task_switch(t);
 
-	printk("post_inner ");
-	printkint(current()->PID);
+	// printk("post_inner ");
+	// printkint(current()->PID);
 	
 	restore_esi_edx_ebx();
 }
+
+
+int ret_from_fork() {
+	return 0;
+}
+
 
 struct task_struct *idle_task;
 

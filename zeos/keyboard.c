@@ -23,8 +23,9 @@ void keyboard_routine() {
     Byte code = event & 0x7f;
     if (make) {
         char c = char_map[code];
-        if (c == 'i') task_switch(idle_task); // idle task (duh)
-        else if (c == 'u') task_switch(&task[1]); // init task
+        if (c >= '0' && c <= '9') {
+            task_switch(&task[c - '0']);
+        }
 
         if (c == '\0') {
             c = 'C';

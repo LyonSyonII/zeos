@@ -1,3 +1,4 @@
+#include "io.h"
 #include <utils.h>
 #include <types.h>
 
@@ -69,6 +70,8 @@ int access_ok(int type, const void * addr, unsigned long size)
   addr_ini=(((unsigned long)addr)>>12);
   addr_fin=((((unsigned long)addr)+size)>>12);
   if (addr_fin < addr_ini) return 0; //This looks like an overflow ... deny access
+
+  printk("no overflow\n");
 
   switch(type)
   {
