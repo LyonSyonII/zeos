@@ -1,4 +1,5 @@
 #include "clock.h"
+#include "sched.h"
 #include "zeos_interrupt.h"
 
 int zeos_ticks;
@@ -14,4 +15,6 @@ int get_clock_ticks() {
 void clock_routine() {
     zeos_ticks++;
     zeos_show_clock();
+
+    schedule();
 }

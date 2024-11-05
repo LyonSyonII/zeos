@@ -41,25 +41,28 @@ int __attribute__((__section__(".text.main"))) main(void) {
   // Test per mida negativa
   // written = write(STDOUT, "alo2", -1);
   // if (written < 0) perror();
-
-  switch (fork()) {
+  
+  char msg[] = "X: ";
+  try_fork: switch (fork()) {
     case 0: {
-      println("Child");
+      msg[0] = 'C';
       break;
     }
     case -1: {
       print("Fork Error: ");
       perror();
-      break;
+      goto try_fork;
     }
     default: {
-      println("Parent");
+      msg[0] = 'P';
       break;
     }
   }
 
   /// GETTIME ///
   while(1) {
+    print(msg);
+    printintln(gettime());
     // Descomenta per imprimir el temps
     // printintln(gettime());
     // printintln(getpid());

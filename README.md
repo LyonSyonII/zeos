@@ -33,7 +33,7 @@
 - [x] Implement the task_switch function.
 - [x] Implement the inner_task_switch function.
 - [x] Implement the getpid system call.
-- [ ] Implement the fork system call.
+- [x] Implement the fork system call.
 - [ ] Implement process scheduling.
 - [ ] Implement the exit system call.
 - [ ] Implement the block system call.

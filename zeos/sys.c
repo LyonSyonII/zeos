@@ -39,22 +39,6 @@ int sys_getpid()
 	return current()->PID;
 }
 
-typedef enum {
-  FORK_
-} FORK_STEP;
-
-/* int undo_fork(int step, union task_union *tu, int error) {
-  switch (step) {
-    case :
-    
-    case 1:
-    
-    case 2:
-      list_add(&tu->task.list, &freequeue);
-  }
-  return error;
-} */
-
 int ret_from_fork() {
   return 0;
 }

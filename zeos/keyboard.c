@@ -37,7 +37,7 @@ void keyboard_routine() {
                 break;
             }
             case 'n': {
-                switch_to_next_task();
+                sched_next_rr();
                 break;
             }
         }

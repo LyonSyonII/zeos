@@ -9,6 +9,7 @@
 #include <mm.h>
 #include <io.h>
 
+int remaining_quantum = 0;
 
 union task_union task[NR_TASKS]
   __attribute__((__section__(".data.task")));
@@ -80,6 +81,7 @@ void init_task1(void)
 	
 	union task_union *task1 = list_entry(lh, union task_union, task.list); //agafem la task_union que correspon
 	task1->task.PID = 1; //assignem PID que toca
+	task1->task.quantum = 200; // Assignem quantum del proces
 	
 	allocate_DIR(&task1->task); //assignem taula de directoris
 	set_user_pages(&task1->task); //Assignem les pagines fisiques necessaries per guardar dades i codi del process
@@ -112,6 +114,50 @@ struct task_struct* current()
 
 //custom code
 
+void update_sched_data_rr() {
+	remaining_quantum -= 1;
+}
+int needs_sched_rr() {
+	// proces actual ha exaurit el seu quantum
+	// estem a IDLE
+	return (remaining_quantum <= 0 || current()->PID == 0) && !list_empty(&readyqueue);
+}
+
+void update_process_state_rr(struct task_struct *t, struct list_head *dest) {
+	// if current state is 'running', no need to delete
+	if (t->state != ST_RUN) {
+		list_del(&t->list);
+	}
+	// if new state is running, 'dest' parameter is null
+	if (dest == NULL) {
+		t->state = ST_RUN;
+	} else {
+		list_add_tail(&t->list, dest);
+		t->state = dest == &readyqueue ? ST_READY : ST_BLOCKED;
+	}
+}
+
+void sched_next_rr() {
+	if (list_empty(&readyqueue)) {
+		task_switch((union task_union*)idle_task);
+		return;
+	}
+	struct list_head *first = list_first(&readyqueue);
+	list_del(first);
+	union task_union *first_entry = list_entry(first, union task_union, task.list);
+	first_entry->task.state = ST_RUN;
+	remaining_quantum = first_entry->task.quantum;
+	task_switch(first_entry);
+}
+
+void schedule() {
+	update_sched_data_rr();
+	if (needs_sched_rr()) {
+		printk("Scheduling!\n");
+		update_process_state_rr(current(), &readyqueue);
+		sched_next_rr();
+	}
+}
 
 void task_switch(union task_union*t) {
 	save_esi_edx_ebx();
@@ -143,23 +189,6 @@ void task_switch(union task_union*t) {
 	printkint(current()->PID);
 	
 	restore_esi_edx_ebx();
-}
-
-void idle_switch() {
-	task_switch((union task_union*)idle_task);
-}
-
-void switch_to_next_task() {
-	if (list_empty(&readyqueue)) {
-		return idle_switch();
-	}
-	struct list_head *first = list_first(&readyqueue);
-	list_del(first);
-	union task_union *first_entry = list_entry(first, union task_union, task.list);
-	if (current() != idle_task) {
-		list_add_tail(&current()->list, &readyqueue);
-	}
-	task_switch(first_entry);
 }
 
 int get_new_PID() {
