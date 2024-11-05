@@ -39,7 +39,7 @@
 - [] Implement process scheduling.
   - [x] Basic implementation
   - [ ] Test more cases
-- [ ] Implement the exit system call.
+- [x] Implement the exit system call.
 - [ ] Implement the block system call.
 - [ ] Implement the unblock system call
 
