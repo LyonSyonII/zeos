@@ -44,14 +44,14 @@ int __attribute__((__section__(".text.main"))) main(void) {
   
   char msg[] = "X: ";
   try_fork: switch (fork()) {
-    case 0: {
-      msg[0] = 'C';
-      break;
-    }
     case -1: {
       print("Fork Error: ");
       perror();
       goto try_fork;
+    }
+    case 0: {
+      msg[0] = 'C';
+      break;
     }
     default: {
       msg[0] = 'P';
