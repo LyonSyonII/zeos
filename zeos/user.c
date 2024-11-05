@@ -60,9 +60,21 @@ int __attribute__((__section__(".text.main"))) main(void) {
   }
 
   /// GETTIME ///
+  int prev_time = 0;
   while(1) {
+    int time = gettime();
+    if (time == prev_time) {
+      continue;
+    }
+    prev_time = time;
     print(msg);
-    printintln(gettime());
+    printintln(time);
+    
+    if (msg[0] == 'P' && time > 500) {
+      exit(1);
+    } else if (time > 1000) {
+      exit(1);
+    }
     // Descomenta per imprimir el temps
     // printintln(gettime());
     // printintln(getpid());

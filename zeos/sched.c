@@ -9,6 +9,7 @@
 #include <mm.h>
 #include <io.h>
 
+#define DEFAULT_QUANTUM 200;
 int remaining_quantum = 0;
 
 union task_union task[NR_TASKS]
@@ -81,7 +82,7 @@ void init_task1(void)
 	
 	union task_union *task1 = list_entry(lh, union task_union, task.list); //agafem la task_union que correspon
 	task1->task.PID = 1; //assignem PID que toca
-	task1->task.quantum = 200; // Assignem quantum del proces
+	task1->task.quantum = DEFAULT_QUANTUM; // Assignem quantum del proces
 	
 	allocate_DIR(&task1->task); //assignem taula de directoris
 	set_user_pages(&task1->task); //Assignem les pagines fisiques necessaries per guardar dades i codi del process
@@ -163,7 +164,7 @@ void task_switch(union task_union*t) {
 	save_esi_edx_ebx();
 
 	printk("pre_inner ");
-	printkint(current()->PID);
+	printkintln(current()->PID);
 
 /*  movl 8(%ebp), %eax # eax = &new
     addl $0x1000, %eax # %eax = &new.stack[1024]
@@ -186,7 +187,7 @@ void task_switch(union task_union*t) {
 	inner_task_switch(t);
 
 	printk("post_inner ");
-	printkint(current()->PID);
+	printkintln(current()->PID);
 	
 	restore_esi_edx_ebx();
 }

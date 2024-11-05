@@ -117,8 +117,13 @@ int sys_fork()
   return PID;
 }
 
-void sys_exit()
-{  
+void sys_exit() {
+  struct task_struct* task = current();
+  free_user_pages(task);
+  task->PID = -1;
+  
+  update_process_state_rr(task, &freequeue);
+  sched_next_rr();
 }
 
 int sys_write(int fd, char * buffer, int size) {

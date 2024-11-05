@@ -72,6 +72,15 @@ ENTRY(fork)
       movl %esp, %ebp
 
       SYSCALL(2)              # fork
+      
+      popl %ebp
+      ret
 
+ENTRY(exit)
+      pushl %ebp
+      movl %esp, %ebp
+
+      SYSCALL(1)
+      
       popl %ebp
       ret

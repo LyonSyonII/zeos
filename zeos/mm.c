@@ -238,15 +238,13 @@ int alloc_frame( void )
     return -1;
 }
 
-void free_user_pages( struct task_struct *task )
-{
- int pag;
- page_table_entry * process_PT =  get_PT(task);
-    /* DATA */
- for (pag=0;pag<NUM_PAG_DATA;pag++){
-	 free_frame(process_PT[PAG_LOG_INIT_DATA+pag].bits.pbase_addr);
-   process_PT[PAG_LOG_INIT_DATA+pag].entry = 0;
- }
+void free_user_pages(struct task_struct *task) {
+  page_table_entry * process_PT =  get_PT(task);
+  /* DATA */
+  for (int pag = 0; pag < NUM_PAG_DATA; pag++) {
+    free_frame(process_PT[PAG_LOG_INIT_DATA+pag].bits.pbase_addr);
+    process_PT[PAG_LOG_INIT_DATA+pag].entry = 0;
+  }
 }
 
 
