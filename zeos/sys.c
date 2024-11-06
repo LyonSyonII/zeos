@@ -145,14 +145,46 @@ void sys_exit() {
   struct list_head *element, *n;
   list_for_each_safe(element, n, &task->children) {
     struct task_struct* children = list_entry(element, struct task_struct, parent_list);
-    printf("Moving children to idle: %d", &children->PID);
+    printf("Moving children to idle: %d\n", &children->PID);
     list_del(element); // remove from old list
     list_add_tail(element, &idle_task->children); // add to new list
     children->parent = idle_task; // update parent
   }
+  printc('\n');
   
   update_process_state_rr(task, &freequeue);
   sched_next_rr();
+}
+
+void sys_block() {
+  struct task_struct* task = current();
+  if (task->pending_unblocks > 0) {
+    task->pending_unblocks -= 1;
+    return;
+  }
+  update_process_state_rr(task, &blocked);
+  sched_next_rr();
+}
+
+int sys_unblock(int pid) {
+  struct task_struct* parent = current();
+  struct task_struct* child_task = NULL;
+  
+  struct list_head* pos;
+  list_for_each(pos, &parent->children) {
+    struct task_struct* tmp = children_head_to_task_struct(pos);
+    if (tmp->PID == pid) {
+      child_task = tmp;
+      break;
+    }
+  }
+  // No child found with PID = pid
+  if (child_task == NULL) return -ECHILD;
+  
+  if (child_task->state != ST_BLOCKED) child_task->pending_unblocks += 1;
+  else update_process_state_rr(child_task, &readyqueue);
+  
+  return 0;
 }
 
 int sys_write(int fd, char * buffer, int size) {

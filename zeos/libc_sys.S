@@ -88,8 +88,27 @@ ENTRY(fork)
 ENTRY(exit)
       pushl %ebp
       movl %esp, %ebp
-
+      
       SYSCALL(1)
+      
+      popl %ebp
+      ret
+
+ENTRY(block)
+      pushl %ebp
+      movl %esp, %ebp
+      
+      SYSCALL(15)             # assignat arbitrariament
+      
+      popl %ebp
+      ret
+
+ENTRY(unblock)
+      pushl %ebp
+      movl %esp, %ebp
+      
+      movl 8(%ebp), %edx      # edx = pid
+      SYSCALL(16)             # assignat arbitrariament
       
       popl %ebp
       ret

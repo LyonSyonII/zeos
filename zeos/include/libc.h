@@ -28,6 +28,10 @@ int fork();
 
 void exit();
 
+void block();
+
+int unblock(int pid);
+
 /// Custom methods
 
 // Prints the provided buffer.

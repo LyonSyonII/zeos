@@ -12,7 +12,7 @@ int errno;
 //Nomes estan els errors que poden sortir del write()
 char *errno_message[128] = {
   "", "EPERM", "", "[ESRCH] No such process", "", "", "", "",
-  "", "Bad file number", "", "", "ENOMEM", "Permission denied", "Bad address", "",
+  "", "Bad file number", "[ECHILD] No child processes", "", "ENOMEM", "Permission denied", "Bad address", "",
   "", "", "", "", "", "", "Invalid argument", "",
   "", "", "", "", "", "", "", "",
   "", "", "", "", "", "", "Function not implemented", "",

@@ -13,6 +13,10 @@ void printlntest(const char *buffer) {
   println(" bytes)");
 }
 
+int is_aprox(int value, int to) {
+  return (value >= to - 5) && (value <= to + 5);
+}
+
 int __attribute__((__section__(".text.main"))) main(void) {
   // Next line, tries to move value 0 to CR3 register. This register is a
   // privileged one, and so it will raise an exception
@@ -43,7 +47,8 @@ int __attribute__((__section__(".text.main"))) main(void) {
   // if (written < 0) perror();
   
   char msg[] = "X: ";
-  try_fork: switch (fork()) {
+  int child = fork();
+  try_fork: switch (child) {
     case -1: {
       print("Fork Error: ");
       perror();
@@ -70,18 +75,25 @@ int __attribute__((__section__(".text.main"))) main(void) {
     print(msg); printint(time);
     print("; PID = "); printint(getpid());
     print("; Parent PID = "); printintln(getppid());
-
-    if (msg[0] == 'P' && time > 500) {
-      println("Killing Parent\n");
-      exit(1);
-    } else if (time > 1000) {
-      print("Parent PID = ");
-      printintln(getppid());
-      exit(1);
+    
+    switch (msg[0]) {
+      case 'C': {
+        if (time == 150) {
+          println("Blocking Children\n");
+          block();
+        } else if (time >= 625) exit(0);
+        break;
+      }
+      case 'P': {
+        if (child && time == 400) {
+          print("Unblocking Children (");
+          int ret = unblock(child);
+          printint(ret);
+          println(")");
+          child = 0;
+        } else if (time >= 605) exit(0);
+        break;
+      }
     }
-    // Descomenta per imprimir el temps
-    // printintln(gettime());
-    // printintln(getpid());
-    // println("loop");
   }
 }

@@ -16,9 +16,12 @@ union task_union task[NR_TASKS]
   __attribute__((__section__(".data.task")));
 
 
-struct task_struct *list_head_to_task_struct(struct list_head *l)
-{
+struct task_struct *list_head_to_task_struct(struct list_head *l) {
   return list_entry( l, struct task_struct, list);
+}
+
+struct task_struct *children_head_to_task_struct(struct list_head *l) {
+	return list_entry(l, struct task_struct, parent_list);
 }
 
 extern struct list_head blocked;
@@ -100,6 +103,7 @@ void init_task1(void) {
 void init_sched() {
 	init_freequeue();
 	INIT_LIST_HEAD(&readyqueue);
+	INIT_LIST_HEAD(&blocked);
 }
 
 struct task_struct* current()
@@ -114,7 +118,14 @@ struct task_struct* current()
 }
 
 
-//custom code
+// custom code
+
+int get_quantum (struct task_struct *t) {
+	return t->quantum;
+}
+void set_quantum (struct task_struct *t, int new_quantum) {
+	t->quantum = new_quantum;
+}
 
 void update_sched_data_rr() {
 	remaining_quantum -= 1;

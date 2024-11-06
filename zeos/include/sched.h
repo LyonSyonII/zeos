@@ -55,6 +55,8 @@ void task_switch(union task_union*t);
 
 struct task_struct *list_head_to_task_struct(struct list_head *l);
 
+struct task_struct *children_head_to_task_struct(struct list_head *l);
+
 int allocate_DIR(struct task_struct *t);
 
 page_table_entry * get_PT (struct task_struct *t) ;
@@ -75,7 +77,7 @@ extern TSS tss;
 extern void save_esi_edx_ebx();
 extern void inner_task_switch(union task_union * new);
 extern void restore_esi_edx_ebx();
-
+extern int* get_ebp();
 
 extern struct task_struct *idle_task;
 extern int remaining_quantum;
@@ -85,9 +87,9 @@ extern struct list_head freequeue;
 extern struct list_head readyqueue;
 
 void init_freequeue();
-
 int get_new_PID();
+int get_quantum (struct task_struct *t);
+void set_quantum (struct task_struct *t, int new_quantum);
 
-int* get_ebp();
 
 #endif  /* __SCHED_H__ */
