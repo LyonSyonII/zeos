@@ -34,17 +34,21 @@ int sys_ni_syscall()
 	return -38; /*ENOSYS*/
 }
 
-int sys_getpid()
-{
+int sys_getpid() {
 	return current()->PID;
+}
+
+// Get Parent PID
+int sys_getppid() {
+  if (current()->parent == NULL) return -ESRCH;
+  return current()->parent->PID;
 }
 
 int ret_from_fork() {
   return 0;
 }
 
-int sys_fork()
-{
+int sys_fork() {
   int PID=-1;
   
   // creates the child process
@@ -105,13 +109,20 @@ int sys_fork()
   
   // set new PID
   child_task->task.PID = PID;
-
+  
+  // set address of the kernel's stack space
   child_task->task.kernel_esp = ((KERNEL_ESP(child_task) - sizeof(union task_union))&0xfffff000) + ((DWord)get_ebp()&0x00000fff);
   child_task->task.kernel_esp -= 4;
-
+  
+  // set return address
   child_task->stack[(((child_task->task.kernel_esp)%sizeof(union task_union))/sizeof(DWord)) + 1] = (DWord)ret_from_fork;
   child_task->stack[(((child_task->task.kernel_esp)%sizeof(union task_union))/sizeof(DWord))] = KERNEL_ESP(child_task);
   
+  // set parent and children parameters
+  child_task->task.parent = parent_task;
+  list_add_tail(&child_task->task.parent_list, &parent_task->children);
+  
+  // add to ready queue
   list_add_tail(&child_task->task.list, &readyqueue);
 
   return PID;
@@ -121,6 +132,20 @@ void sys_exit() {
   struct task_struct* task = current();
   free_user_pages(task);
   task->PID = -1;
+  
+  if (task->parent != NULL) {
+    // remove children from parent's list
+    list_del(&task->parent_list);
+    task->parent = NULL;
+  }
+  
+  // add remaining children to idle process
+  struct list_head *element, *n;
+  list_for_each_safe(element, n, &task->children) {
+    list_del(element); // remove from old list
+    list_add_tail(element, &idle_task->children); // add to new list
+    list_head_to_task_struct(element)->parent = idle_task; // update parent
+  }
   
   update_process_state_rr(task, &freequeue);
   sched_next_rr();

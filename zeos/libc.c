@@ -11,7 +11,7 @@ int errno;
 //Array amb una llista dels missatges que imprimir amb perror 
 //Nomes estan els errors que poden sortir del write()
 char *errno_message[128] = {
-  "", "EPERM", "", "", "", "", "", "",
+  "", "EPERM", "", "[ESRCH] No such process", "", "", "", "",
   "", "Bad file number", "", "", "ENOMEM", "Permission denied", "Bad address", "",
   "", "", "", "", "", "", "Invalid argument", "",
   "", "", "", "", "", "", "", "",
@@ -41,12 +41,18 @@ void perror() {
 
 void itoa(int a, char *b)
 {
-  int i, i1;
+  int i = 0, i1 = 0;
   char c;
   
   if (a==0) { b[0]='0'; b[1]=0; return ;}
   
-  i=0;
+  if (a < 0) {
+    b[0] = '-';
+    a *= -1;
+    i += 1;
+    i1 += 1;
+  }
+  
   while (a>0)
   {
     b[i]=(a%10)+'0';
@@ -54,7 +60,7 @@ void itoa(int a, char *b)
     i++;
   }
   
-  for (i1=0; i1<i/2; i1++)
+  for (i1; i1<i/2; i1++)
   {
     c=b[i1];
     b[i1]=b[i-i1-1];

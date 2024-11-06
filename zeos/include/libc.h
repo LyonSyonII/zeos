@@ -21,6 +21,8 @@ int write(int fd, const char *buffer, int size);
 int gettime();
 
 int getpid();
+// Get Parent PID
+int getppid();
 
 int fork();
 

@@ -19,9 +19,15 @@ struct task_struct {
   int PID;			/* Process ID. This MUST be the first field of the struct. */
   page_table_entry * dir_pages_baseAddr;
   DWord kernel_esp;
-  struct list_head list;
-  enum state_t state;
-  int quantum;
+  struct list_head list; /* Anchor to the `ready` queue. */
+
+  struct list_head children; /* List of children of this process. */
+  struct list_head parent_list; /* Anchor to the parent's children list.  */
+  struct task_struct* parent; /* Parent of this process. */
+
+  enum state_t state; /* Scheduling state of the process. */
+  int quantum; /* Default quantum assigned to the process. */
+  int pending_unblocks; /* If > 0, this process is blocked. */
 };
 
 union task_union {
@@ -79,7 +85,6 @@ extern struct list_head freequeue;
 extern struct list_head readyqueue;
 
 void init_freequeue();
-void switch_to_next_task();
 
 int get_new_PID();
 

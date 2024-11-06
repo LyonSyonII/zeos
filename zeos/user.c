@@ -67,12 +67,16 @@ int __attribute__((__section__(".text.main"))) main(void) {
       continue;
     }
     prev_time = time;
-    print(msg);
-    printintln(time);
-    
+    print(msg); printint(time);
+    print("; PID = "); printint(getpid());
+    print("; Parent PID = "); printintln(getppid());
+
     if (msg[0] == 'P' && time > 500) {
+      println("Killing Parent\n");
       exit(1);
     } else if (time > 1000) {
+      print("Parent PID = ");
+      printintln(getppid());
       exit(1);
     }
     // Descomenta per imprimir el temps

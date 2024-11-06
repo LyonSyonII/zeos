@@ -58,16 +58,16 @@ void cpu_idle(void)
 	}
 }
 
-void init_idle (void)
-{
+void init_idle (void) {
 	struct list_head *lh = list_first(&freequeue); //Agafem la primera entrada de la freequeue
 	list_del(lh); //Borrem aquesta entrada de la freequeue
 	
 	union task_union *tu = list_entry(lh, union task_union, task.list); //agafem la task union que correspon
 	tu->task.PID = 0; //assignem PID corresponent
+	INIT_LIST_HEAD(&tu->task.children); // Inicialitzem llista dels fills;
 
 	allocate_DIR(&tu->task); //assignem un nou directori on guardar les adreces
-
+	
 	tu->stack[1023] = (DWord)cpu_idle; // @return
 	tu->stack[1022] = 0; // ebp = 0
 	tu->task.kernel_esp = (DWord)&tu->stack[1022]; // assignem la posició del esp que apunta a dalt de tot de la pila de sistema
@@ -75,13 +75,13 @@ void init_idle (void)
 	idle_task = &tu->task; //col·loquem a idle_task l'adreça del task_struct de idle
 }
 
-void init_task1(void)
-{
+void init_task1(void) {
 	struct list_head *lh = list_first(&freequeue); //Agafem la primera entrada de la freequeue
 	list_del(lh); //Borrem aquesta entrada de la freequeue
 	
 	union task_union *task1 = list_entry(lh, union task_union, task.list); //agafem la task_union que correspon
 	task1->task.PID = 1; //assignem PID que toca
+	INIT_LIST_HEAD(&task1->task.children); // Inicialitzem llista dels fills
 	task1->task.quantum = DEFAULT_QUANTUM; // Assignem quantum del proces
 	
 	allocate_DIR(&task1->task); //assignem taula de directoris
@@ -95,8 +95,7 @@ void init_task1(void)
 }
 
 
-void init_sched()
-{
+void init_sched() {
 	init_freequeue();
 	INIT_LIST_HEAD(&readyqueue);
 }
