@@ -6,6 +6,7 @@
 #define __IO_H__
 
 #include <types.h>
+#include <sched.h>
 
 /** Screen functions **/
 /**********************/
@@ -19,5 +20,11 @@ void printkint(int i);
 void printkintln(int i);
 void printkhex(int i);
 void printkhexln(int i);
+
+// Supports: `%d`, `%p`, `%x`, `%s`.
+#define printf(template, ...) __printf(template, (const void*[]) { __VA_ARGS__ })
+
+void __printf(const char* template, const void* args[]);
+void dbg_task(struct task_struct* task);
 
 #endif  /* __IO_H__ */
