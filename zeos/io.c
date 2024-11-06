@@ -2,6 +2,7 @@
  * io.c - 
  */
 
+#include "sched.h"
 #include "utils.h"
 #include <io.h>
 
@@ -69,12 +70,18 @@ void printk(char *string)
 
 void __itoa(int a, char *b)
 {
-  int i, i1;
+  int i = 0, i1 = 0;
   char c;
   
-  if (a==0) { b[0]='0'; b[1]=0; return ;}
+  if (a==0) { b[0]='0'; b[1]=0; return; }
   
-  i=0;
+  if (a < 0) {
+    b[0] = '-';
+    a *= -1;
+    i = 1;
+    i1 = 1;
+  }
+
   while (a>0)
   {
     b[i]=(a%10)+'0';
@@ -82,7 +89,7 @@ void __itoa(int a, char *b)
     i++;
   }
   
-  for (i1=0; i1<i/2; i1++)
+  for (i1; i1<i/2; i1++)
   {
     c=b[i1];
     b[i1]=b[i-i1-1];
@@ -119,4 +126,76 @@ void printkhex(int i) {
 void printkhexln(int i) {
   printkhex(i);
   printc('\n');
+}
+
+void printkptr(const void* ptr) {
+  if (ptr == NULL) {
+    printk("NULL");
+    return;
+  }
+  printkhex((int)ptr);
+}
+
+void printkptrln(void* ptr) {
+  printkptr(ptr);
+  printc('\n');
+}
+
+void __printf(const char* template, const void* args[]) {
+  int i = 0, arg = 0;
+  char c;
+  while ( (c = template[i]) ) {
+    i += 1;
+    if (c != '%') {
+      printc(c);
+      continue;
+    }
+    switch (template[i]) {
+      case 'd':
+        printkint(*(int*)args[arg]);
+        break;
+      case 'p':
+        printkptr(args[arg]);
+        break;
+      case 'x':
+        printkhex(*(int*)args[arg]);
+        break;
+      case 's':
+        printk((char*)args[arg]);
+        break;
+      default:
+        printk("%ERROR in arg %"); printkint(arg);
+        break;
+    }
+    arg += 1;
+    i += 1;
+  }
+}
+
+void dbg_task(struct task_struct* task) {
+  const int err = -1;
+
+  printf("task {\n\
+  PID: %d\n\
+  addr: %p\n\
+  dir_pages_baseAddr: %p\n\
+  kernel_esp: %x\n\
+  list: %p\n\
+\n\
+  children: %p\n\
+  parent_list: %p\n\
+  parent: %p\n\
+  parent_PID: %d\n\
+}\n",
+    &task->PID,
+    task,
+    task->dir_pages_baseAddr,
+    &task->kernel_esp,
+    &task->list,
+    
+    &task->children,
+    task->parent_list.next,
+    task->parent,
+    task->parent ? &task->parent->PID : &err
+  );
 }
