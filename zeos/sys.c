@@ -49,8 +49,6 @@ int ret_from_fork() {
 }
 
 int sys_fork() {
-  int PID=-1;
-  
   // creates the child process
   if (list_empty(&freequeue)) return -ENOMEM; //CANVIAR
   
@@ -105,10 +103,6 @@ int sys_fork() {
   }
   // flush TLB
   set_cr3(get_DIR(parent_task));
-  PID = get_new_PID();
-  
-  // set new PID
-  child_task->task.PID = PID;
   
   // set address of the kernel's stack space
   child_task->task.kernel_esp = ((KERNEL_ESP(child_task) - sizeof(union task_union))&0xfffff000) + ((DWord)get_ebp()&0x00000fff);
@@ -118,18 +112,26 @@ int sys_fork() {
   child_task->stack[(((child_task->task.kernel_esp)%sizeof(union task_union))/sizeof(DWord)) + 1] = (DWord)ret_from_fork;
   child_task->stack[(((child_task->task.kernel_esp)%sizeof(union task_union))/sizeof(DWord))] = KERNEL_ESP(child_task);
   
-  // set parent and children parameters
+  // set new PID
+  child_task->task.PID = get_new_PID();
+  // set parent of new
   child_task->task.parent = parent_task;
+  // initialize children list of new
+  INIT_LIST_HEAD(&child_task->task.children);
+  // add new to parent's list
   list_add_tail(&child_task->task.parent_list, &parent_task->children);
-  
+  printf("Added children %d to parent %d\n", &child_task->task.PID, &parent_task->PID);
+
   // add to ready queue
   list_add_tail(&child_task->task.list, &readyqueue);
 
-  return PID;
+  return child_task->task.PID;
 }
 
 void sys_exit() {
   struct task_struct* task = current();
+  printf("Exiting process %d\n", &task->PID);
+
   free_user_pages(task);
   task->PID = -1;
   
@@ -142,9 +144,11 @@ void sys_exit() {
   // add remaining children to idle process
   struct list_head *element, *n;
   list_for_each_safe(element, n, &task->children) {
+    struct task_struct* children = list_entry(element, struct task_struct, parent_list);
+    printf("Moving children to idle: %d", &children->PID);
     list_del(element); // remove from old list
     list_add_tail(element, &idle_task->children); // add to new list
-    list_head_to_task_struct(element)->parent = idle_task; // update parent
+    children->parent = idle_task; // update parent
   }
   
   update_process_state_rr(task, &freequeue);
