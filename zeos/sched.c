@@ -64,6 +64,7 @@ void init_idle (void) {
 	
 	union task_union *tu = list_entry(lh, union task_union, task.list); //agafem la task union que correspon
 	tu->task.PID = 0; //assignem PID corresponent
+	tu->task.parent = NULL;
 	INIT_LIST_HEAD(&tu->task.children); // Inicialitzem llista dels fills;
 
 	allocate_DIR(&tu->task); //assignem un nou directori on guardar les adreces
@@ -81,6 +82,7 @@ void init_task1(void) {
 	
 	union task_union *task1 = list_entry(lh, union task_union, task.list); //agafem la task_union que correspon
 	task1->task.PID = 1; //assignem PID que toca
+	task1->task.parent = NULL;
 	INIT_LIST_HEAD(&task1->task.children); // Inicialitzem llista dels fills
 	task1->task.quantum = DEFAULT_QUANTUM; // Assignem quantum del proces
 	
