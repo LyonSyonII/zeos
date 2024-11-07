@@ -136,7 +136,7 @@ void printkptr(const void* ptr) {
   printkhex((int)ptr);
 }
 
-void printkptrln(void* ptr) {
+void printkptrln(const void* ptr) {
   printkptr(ptr);
   printc('\n');
 }

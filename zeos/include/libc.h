@@ -44,5 +44,8 @@ int printint(int i);
 int printintln(int i);
 // Prints the provided buffer with a newline at the end.
 int println(const char* buffer);
+// Supports: `%d`, `%p`, `%x`, `%s`.
+#define printf(template, ...) __printf(template, (const void*[]) { __VA_ARGS__ })
+void __printf(const char* template, const void* args[]);
 
 #endif  /* __LIBC_H__ */

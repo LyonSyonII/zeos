@@ -2,50 +2,33 @@
 
 int pid;
 
-// Prints the provided buffer and the number of bytes printed.
-void printlntest(const char *buffer) {
-  int written = print(buffer);
-  if (written < 0)
-    return;
-
-  print(" (");
-  printint(written);
-  println(" bytes)");
+void test_spawn_maximum() {
+  int children = 0;
+  while (1) {
+    int child = fork();
+    if (child == 0) {
+      block();
+      exit(0);
+    } else if (child > 0) {
+      children += 1;
+      printf("Spawned children number %d; %d in total\n", &child, &children);
+    } else {
+      print("Fork error: "); perror();
+      exit(0);
+    }
+  }
 }
 
-int is_aprox(int value, int to) {
-  return (value >= to - 5) && (value <= to + 5);
-}
-
-int __attribute__((__section__(".text.main"))) main(void) {
-  // Next line, tries to move value 0 to CR3 register. This register is a
-  // privileged one, and so it will raise an exception
-  // __asm__ __volatile__ ("mov %0, %%cr3"::"r" (0) );
-
-  /// WRITE ///
-  int written = 0;
-
-  printlntest("\nHello ZeOS from user!");
-
-  // Uncomment to test PAGE FAULT
-  // char* p = 0; *p = 'x';
-
-  // Test per getpid (en teoria funciona)
-  print("PID: ");
-  printintln(getpid());
-
-  // Crida que falla (fd incorrecte)
-  // written = write(0, "alo", 3);
-  // if (written < 0) perror();
-
-  // Test per null pointer
-  // written = write(STDOUT, (char*)0, 3);
-  // if (written < 0) perror();
-
-  // Test per mida negativa
-  // written = write(STDOUT, "alo2", -1);
-  // if (written < 0) perror();
-  
+/// - Fork Process 1 into Process 2.
+/// - Scheduler executes Process 2.
+/// - When `time == 150`, the Child process blocks itself.
+/// - Parent executes until `time == 400`, 50 clock ticks more than it should (`quantum == 200`).
+/// - Then the parent unblocks the Child, and the scheduler immediately changes to it.
+/// - Scheduler executes Process 2 for the whole 200 clock ticks.
+/// - When `time == 600`, scheduler changes to Parent.
+/// - When `time == 605`, Parent exits. Idle is assigned as Child's parent and scheduler executes it immediately.
+/// - When `time == 625`, Child exits, leaving no process in `readyqueue` and scheduler executes Idle forever.
+void test_scheduling_multiple_processes() {
   char msg[] = "X: ";
   int child = fork();
   try_fork: switch (child) {
@@ -63,8 +46,9 @@ int __attribute__((__section__(".text.main"))) main(void) {
       break;
     }
   }
+  
+  int pid = getpid();
 
-  /// GETTIME ///
   int prev_time = 0;
   while(1) {
     int time = gettime();
@@ -72,28 +56,36 @@ int __attribute__((__section__(".text.main"))) main(void) {
       continue;
     }
     prev_time = time;
-    print(msg); printint(time);
-    print("; PID = "); printint(getpid());
-    print("; Parent PID = "); printintln(getppid());
+
+    int ppid = getppid();
+    printf("%s%d; PID = %d; Parent PID = %d\n", msg, &time, &pid, &ppid);
     
-    switch (msg[0]) {
-      case 'C': {
-        if (time == 150) {
-          println("Blocking Children\n");
-          block();
-        } else if (time >= 625) exit(0);
-        break;
+    if (msg[0] == 'C') {
+      if (time == 150) {
+        println("Blocking Children\n");
+        block();
+      } else if (time >= 625) { 
+        exit(0);
       }
-      case 'P': {
-        if (child && time == 400) {
-          print("Unblocking Children (");
-          int ret = unblock(child);
-          printint(ret);
-          println(")");
-          child = 0;
-        } else if (time >= 605) exit(0);
-        break;
+    } else if (msg[0] == 'P') {
+      if (child && time == 400) {
+        int ret = unblock(child);
+        printf("Unblocking Children(%d)\n", &ret);
+        child = 0;
+      } else if (time >= 605) { 
+        exit(0);
       }
     }
   }
+}
+
+int __attribute__((__section__(".text.main"))) main(void) {
+  // Next line, tries to move value 0 to CR3 register. This register is a
+  // privileged one, and so it will raise an exception
+  // __asm__ __volatile__ ("mov %0, %%cr3"::"r" (0) );
+
+  println("\nHello ZeOS from user!");
+
+  // test_spawn_maximum();
+  test_scheduling_multiple_processes();
 }
