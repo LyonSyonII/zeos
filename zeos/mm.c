@@ -3,6 +3,8 @@
  */
 
 
+#include "io.h"
+#include "mm_address.h"
 #include <types.h>
 #include <mm.h>
 #include <segment.h>
@@ -234,16 +236,27 @@ int alloc_frame( void )
         i += 2; /* NOTE: There will be holes! This is intended. 
 			DO NOT MODIFY! */
     }
-
+    
     return -1;
 }
 
 void free_user_pages(struct task_struct *task) {
   page_table_entry * process_PT =  get_PT(task);
-  /* DATA */
+
+  // free data pages
   for (int pag = 0; pag < NUM_PAG_DATA; pag++) {
     free_frame(process_PT[PAG_LOG_INIT_DATA+pag].bits.pbase_addr);
     process_PT[PAG_LOG_INIT_DATA+pag].entry = 0;
+  }
+  
+  if (task->parent != NULL && task->parent != idle_task) return;
+  if (!list_empty(&task->children)) return;
+  
+  dbg("[PID %d] Freeing code pages\n", &task->PID);
+  // If the process has no children, free code pages too
+  for (int pag = 0; pag < NUM_PAG_CODE; pag++) {
+    free_frame(process_PT[PAG_LOG_INIT_CODE+pag].bits.pbase_addr);
+    process_PT[PAG_LOG_INIT_CODE+pag].entry = 0;
   }
 }
 

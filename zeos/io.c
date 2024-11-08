@@ -141,7 +141,7 @@ void printkptrln(const void* ptr) {
   printc('\n');
 }
 
-void __printf(const char* template, const void* args[]) {
+void __printkf(const char* template, const void* args[]) {
   int i = 0, arg = 0;
   char c;
   while ( (c = template[i]) ) {
@@ -175,7 +175,7 @@ void __printf(const char* template, const void* args[]) {
 void dbg_task(struct task_struct* task) {
   const int err = -1;
 
-  printf("task {\n\
+  printkf("task {\n\
   PID: %d\n\
   addr: %p\n\
   dir_pages_baseAddr: %p\n\

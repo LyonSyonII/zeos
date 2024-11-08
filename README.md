@@ -2,6 +2,10 @@
 
 # ZEOS - FiB UPC (2024-2025)
 
+## Preguntes
+- sys.c:108-113 (d'on treu les adreces?)
+- sched.c:88 (task1 és fill de Idle o no te pare?)
+
 ## Directory Structure
 
 - [SO2] bootsect.S: boot sector definition
@@ -33,15 +37,16 @@
 - [x] Implement the task_switch function.
 - [x] Implement the inner_task_switch function.
 - [x] Implement the getpid system call.
-- [] Implement the fork system call.
+- [x] Implement the fork system call.
   - [x] Basic implementation
-  - [ ] Add error handling (unsufficient at the moment)
-- [] Implement process scheduling.
+  - [x] Add error handling
+- [x] Implement process scheduling.
   - [x] Basic implementation
-  - [ ] Test more cases
+  - [x] Test more cases
 - [x] Implement the exit system call.
-- [ ] Implement the block system call.
-- [ ] Implement the unblock system call
+- [x] Implement the block system call.
+- [x] Implement the unblock system call
+- [ ] Modify user.c explanation to account for changed behaviour
 
 ### Notes
 - modificar task struct (pcb)

@@ -102,9 +102,13 @@ int __attribute__((__section__(".text.main")))
 
   reset_clock_ticks();
   
+  // reset quantum for task1, as it has not executed yet
+  reset_task1_quantum();
+  
   printk("Entering user mode...\n");
-
+  
   enable_int();
+
   /*
    * We return from a 'theorical' call to a 'call gate' to reduce our privileges
    * and going to execute 'magically' at 'usr_main'...

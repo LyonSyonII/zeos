@@ -60,7 +60,7 @@ int sys_fork() {
   
   // copy whole stack from parent to child
   copy_data((void*)parent_task, (void*)child_task, sizeof(union task_union));
-
+  
   // allocate new directory for child
   if (allocate_DIR(&child_task->task) < 0) return -ENOMEM;
   
@@ -120,7 +120,7 @@ int sys_fork() {
   INIT_LIST_HEAD(&child_task->task.children);
   // add new to parent's list
   list_add_tail(&child_task->task.parent_list, &parent_task->children);
-  printf("Added children %d to parent %d\n", &child_task->task.PID, &parent_task->PID);
+  dbg("[PID %d] Added children %d\n", &parent_task->PID, &child_task->task.PID);
 
   // add to ready queue
   list_add_tail(&child_task->task.list, &readyqueue);
@@ -130,7 +130,7 @@ int sys_fork() {
 
 void sys_exit() {
   struct task_struct* task = current();
-  printf("Exiting process %d\n", &task->PID);
+  dbg("[PID %d] Exiting process\n", &task->PID);
 
   free_user_pages(task);
   task->PID = -1;
@@ -145,10 +145,10 @@ void sys_exit() {
   struct list_head *element, *n;
   list_for_each_safe(element, n, &task->children) {
     struct task_struct* children = list_entry(element, struct task_struct, parent_list);
-    printf("Moving children to idle: %d\n", &children->PID);
     list_del(element); // remove from old list
     list_add_tail(element, &idle_task->children); // add to new list
     children->parent = idle_task; // update parent
+    dbg("[PID %d] Parent killed, moved to Idle\n", &children->PID);
   }
   printc('\n');
   

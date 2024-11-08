@@ -82,9 +82,5 @@ void setIdt()
 
 
 void print_page_fault(int eip) {
-  printk("Process generates a PAGE FAULT exception at EIP: 0x");
-  char buff[10];
-  itox(eip, buff);
-  buff[8] = '\n';
-  printk(buff);
+  printkf("Process generates a PAGE FAULT exception at EIP: 0x%x\n", &eip);
 }

@@ -90,6 +90,7 @@ void init_freequeue();
 int get_new_PID();
 int get_quantum (struct task_struct *t);
 void set_quantum (struct task_struct *t, int new_quantum);
+void reset_task1_quantum();
 
 
 #endif  /* __SCHED_H__ */

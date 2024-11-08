@@ -5,6 +5,8 @@
 #ifndef __IO_H__
 #define __IO_H__
 
+#define DEBUG 1
+
 #include <types.h>
 #include <sched.h>
 
@@ -24,8 +26,14 @@ void printkptr(const void* ptr);
 void printkptrln(const void* ptr);
 
 // Supports: `%d`, `%p`, `%x`, `%s`.
-#define printf(template, ...) __printf(template, (const void*[]) { __VA_ARGS__ })
-void __printf(const char* template, const void* args[]);
+#define printkf(template, ...) __printkf(template, (const void*[]) { __VA_ARGS__ })
+void __printkf(const char* template, const void* args[]);
 void dbg_task(struct task_struct* task);
+
+#if defined(DEBUG) && DEBUG > 0
+    #define dbg(...) printkf(__VA_ARGS__)
+#else
+    #define dbg(...) while(0) { printkf(__VA_ARGS__); }
+#endif
 
 #endif  /* __IO_H__ */

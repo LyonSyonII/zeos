@@ -99,6 +99,10 @@ void init_task1(void) {
 	set_cr3(task1->task.dir_pages_baseAddr); //Col·loquem a cr3 l'adreça de la taula de directoris del process
 }
 
+void reset_task1_quantum() {
+	remaining_quantum = DEFAULT_QUANTUM;
+}
+
 
 void init_sched() {
 	init_freequeue();
@@ -123,6 +127,7 @@ struct task_struct* current()
 int get_quantum (struct task_struct *t) {
 	return t->quantum;
 }
+
 void set_quantum (struct task_struct *t, int new_quantum) {
 	t->quantum = new_quantum;
 }
@@ -130,9 +135,9 @@ void set_quantum (struct task_struct *t, int new_quantum) {
 void update_sched_data_rr() {
 	remaining_quantum -= 1;
 }
+
 int needs_sched_rr() {
-	// proces actual ha exaurit el seu quantum
-	// estem a IDLE
+	// proces actual ha exaurit el seu quantum || estem a Idle
 	return (remaining_quantum <= 0 || current()->PID == 0) && !list_empty(&readyqueue);
 }
 
@@ -165,8 +170,11 @@ void sched_next_rr() {
 
 void schedule() {
 	update_sched_data_rr();
+	if (DEBUG > 1 && current()->PID) {
+		dbg("[Sched] Remaining quantum %d from %d\n", &remaining_quantum, &current()->quantum);
+	}
 	if (needs_sched_rr()) {
-		printk("Scheduling!\n");
+		dbg("[Sched] Scheduling!\n");
 		update_process_state_rr(current(), &readyqueue);
 		sched_next_rr();
 	}
@@ -174,9 +182,8 @@ void schedule() {
 
 void task_switch(union task_union*t) {
 	save_esi_edx_ebx();
-
-	printk("pre_inner ");
-	printkintln(current()->PID);
+	
+	dbg("[PID %d] pre_inner\n", &current()->PID);
 
 /*  movl 8(%ebp), %eax # eax = &new
     addl $0x1000, %eax # %eax = &new.stack[1024]
@@ -197,9 +204,8 @@ void task_switch(union task_union*t) {
 	set_cr3(t->task.dir_pages_baseAddr);
 
 	inner_task_switch(t);
-
-	printk("post_inner ");
-	printkintln(current()->PID);
+	
+	dbg("[PID %d] post_inner\n", &current()->PID);
 	
 	restore_esi_edx_ebx();
 }
