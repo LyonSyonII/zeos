@@ -22,25 +22,7 @@ void keyboard_routine() {
     Byte make = !(event >> 7); 
     Byte code = event & 0x7f;
     if (make) {
-        char c = char_map[code];
-        switch (char_map[code]) {
-            case 'i': {
-                printc_xy(79, 0, c);
-                // idle task
-                task_switch((union task_union*)idle_task);
-                break;
-            }
-            case 'u': {
-                printc_xy(79, 0, c);
-                // init task
-                task_switch(&task[1]);
-                break;
-            }
-            case 'n': {
-                sched_next_rr();
-                break;
-            }
-        }
+        char c = char_map[code];        
 
         if (c == '\0') {
             c = 'C';

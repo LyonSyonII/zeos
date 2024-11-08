@@ -5,7 +5,7 @@
 #ifndef __IO_H__
 #define __IO_H__
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <types.h>
 #include <sched.h>

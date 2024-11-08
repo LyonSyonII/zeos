@@ -89,6 +89,6 @@ int __attribute__((__section__(".text.main"))) main(void) {
   // test_spawn_maximum();
   test_scheduling_multiple_processes();
   
-  // shold never reach
+  // should never reach
   while (1);
 }

@@ -11,11 +11,11 @@ int errno;
 //Array amb una llista dels missatges que imprimir amb perror 
 //Nomes estan els errors que poden sortir del write()
 char *errno_message[128] = {
-  "", "EPERM", "", "[ESRCH] No such process", "", "", "", "",
-  "", "Bad file number", "[ECHILD] No child processes", "", "ENOMEM", "Permission denied", "Bad address", "",
-  "", "", "", "", "", "", "Invalid argument", "",
+  "", "[EPERM] Operation not permitted", "", "[ESRCH] No such process", "", "", "", "",
+  "", "[EBADF] Bad file number", "[ECHILD] No child processes", "", "[ENOMEM] Out of memory", "[EACCES] Permission denied", "[EFAULT] Bad address", "",
+  "", "", "", "", "", "", "[EINVAL] Invalid argument", "",
   "", "", "", "", "", "", "", "",
-  "", "", "", "", "", "", "Function not implemented", "",
+  "", "", "", "", "", "", "[ENOSYS] Function not implemented", "",
   "", "", "", "", "", "", "", "",
   "", "", "", "", "", "", "", "",
   "", "", "", "", "", "", "", "",

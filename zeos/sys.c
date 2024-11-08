@@ -62,8 +62,11 @@ int sys_fork() {
   copy_data((void*)parent_task, (void*)child_task, sizeof(union task_union));
   
   // allocate new directory for child
-  if (allocate_DIR(&child_task->task) < 0) return -ENOMEM;
-  
+  if (allocate_DIR(&child_task->task) < 0) {
+    list_add(child_task_list_head, &freequeue);
+    return -ENOMEM;
+  }
+
   // get parent and child Page Table addresses
   page_table_entry *child_PT = get_PT(&child_task->task);
   page_table_entry *parent_PT = get_PT(parent_task);
@@ -82,7 +85,10 @@ int sys_fork() {
   // copy data pages
   for (int pag = 0; pag < NUM_PAG_DATA; ++pag) {
     int new_ph_pag = alloc_frame();
-    if (new_ph_pag < 0) return dealloc_user_pages(child_PT, 0, pag, -ENOMEM);
+    if (new_ph_pag < 0) {
+      list_add(child_task_list_head, &freequeue);
+      return dealloc_user_pages(child_PT, 0, pag, -ENOMEM);
+    }
     
     // assign page to child
     // child_data[pag] = new_pag;
@@ -150,7 +156,7 @@ void sys_exit() {
     children->parent = idle_task; // update parent
     dbg("[PID %d] Parent killed, moved to Idle\n", &children->PID);
   }
-  printc('\n');
+  dbg("\n");
   
   update_process_state_rr(task, &freequeue);
   sched_next_rr();
