@@ -19,15 +19,17 @@ void test_spawn_maximum() {
   }
 }
 
+/// # `DEFAULT_QUANTUM = 200`
 /// - Fork Process 1 into Process 2.
-/// - Scheduler executes Process 2.
-/// - When `time == 150`, the Child process blocks itself.
-/// - Parent executes until `time == 400`, 50 clock ticks more than it should (`quantum == 200`).
-/// - Then the parent unblocks the Child, and the scheduler immediately changes to it.
+/// - Scheduler continues running Process 1.
+/// - When `time == 200` the Scheduler changes the execution to the Child.
+/// - When `time == 215` the Child blocks itself, and the Scheduler changes to the Parent.
+/// - Parent executes until `time == 415`, 15 ticks more than it should (`quantum == 200`).
+/// - Then the parent unblocks the Child, and the Scheduler immediately changes to it.
 /// - Scheduler executes Process 2 for the whole 200 clock ticks.
-/// - When `time == 600`, scheduler changes to Parent.
-/// - When `time == 605`, Parent exits. Idle is assigned as Child's parent and scheduler executes it immediately.
-/// - When `time == 625`, Child exits, leaving no process in `readyqueue` and scheduler executes Idle forever.
+/// - When `time == 615`, Scheduler changes to Parent.
+/// - When `time == 620`, Parent exits. Idle is assigned as Child's parent and the Scheduler executes it immediately.
+/// - When `time == 625`, Child exits, leaving no process in `readyqueue` and the Scheduler executes Idle forever.
 void test_scheduling_multiple_processes() {
   char msg[] = "X: ";
   int child = fork();
@@ -61,18 +63,18 @@ void test_scheduling_multiple_processes() {
     printf("%s%d; PID = %d; Parent PID = %d\n", msg, &time, &pid, &ppid);
     
     if (msg[0] == 'C') {
-      if (time == 150) {
+      if (time == 215) {
         println("Blocking Children\n");
         block();
       } else if (time >= 625) { 
         exit(0);
       }
     } else if (msg[0] == 'P') {
-      if (child && time == 400) {
+      if (child && time == 415) {
         int ret = unblock(child);
         printf("Unblocking Children(%d)\n\n", &ret);
         child = 0;
-      } else if (time >= 605) { 
+      } else if (time >= 620) { 
         exit(0);
       }
     }
