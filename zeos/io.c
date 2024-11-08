@@ -141,6 +141,11 @@ void printkptrln(const void* ptr) {
   printc('\n');
 }
 
+
+void __attribute__ ((noinline)) __dummy(const char* template, const void* args[]) {
+  return;
+}
+
 void __printkf(const char* template, const void* args[]) {
   int i = 0, arg = 0;
   char c;

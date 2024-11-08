@@ -30,10 +30,13 @@ void printkptrln(const void* ptr);
 void __printkf(const char* template, const void* args[]);
 void dbg_task(struct task_struct* task);
 
+void __printkf(const char* template, const void* args[]);
+void __dummy(const char* template, const void* args[]);
+
 #if defined(DEBUG) && DEBUG > 0
     #define dbg(...) printkf(__VA_ARGS__)
 #else
-    #define dbg(...) while(0) { printkf(__VA_ARGS__); }
+    #define dbg(template, ...) __dummy(template, (const void*[]) { __VA_ARGS__ })
 #endif
 
 #endif  /* __IO_H__ */
