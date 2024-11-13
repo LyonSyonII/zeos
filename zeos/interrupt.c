@@ -1,6 +1,7 @@
 /*
  * interrupt.c -
  */
+#include "list.h"
 #include <types.h>
 #include <interrupt.h>
 #include <segment.h>
@@ -71,12 +72,15 @@ void setIdt()
   
   set_handlers();
 
-
-
+  
+  INIT_LIST_HEAD(&keyboard_blocked);
   /* ADD INITIALIZATION CODE FOR INTERRUPT VECTOR */
   setInterruptHandler(14, page_fault_handler2, 0);
   setInterruptHandler(32, clock_handler, 0);
   setInterruptHandler(33, keyboard_handler, 0);
+
+  setInterruptHandler(130, read_system_call_handler, 3); // PARCIAL 1
+  
   set_idt_reg(&idtR);
 }
 

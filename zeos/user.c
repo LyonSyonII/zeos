@@ -89,7 +89,12 @@ int __attribute__((__section__(".text.main"))) main(void) {
   println("\nHello ZeOS from user!");
 
   // test_spawn_maximum();
-  test_scheduling_multiple_processes();
+  // test_scheduling_multiple_processes();
+  
+  println("Blocking...");
+  char result;
+  int ret = read(&result);
+  printf("Read returned %d, with character %c", &ret, &result);
   
   // should never reach
   while (1);

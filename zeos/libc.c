@@ -188,6 +188,9 @@ void __printf(const char* template, const void* args[]) {
       case 's':
         print((char*)args[arg]);
         break;
+      case 'c':
+        printchar(*(char*)args[arg]);
+        break;
       case '%':
         printchar('%');
         break;

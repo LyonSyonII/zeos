@@ -1,4 +1,5 @@
 #include "io.h"
+#include "list.h"
 #include "sched.h"
 #include "types.h"
 #include <keyboard.h>
@@ -21,12 +22,40 @@ void keyboard_routine() {
     // break: key released
     Byte make = !(event >> 7); 
     Byte code = event & 0x7f;
-    if (make) {
-        char c = char_map[code];        
+    if (!make) return;
+    
+    char c = char_map[code];
 
-        if (c == '\0') {
-            c = 'C';
-        }
-        printc_xy(79, 24, c);
+    if (c == '\0') {
+        c = 'C';
     }
+    printc_xy(79, 24, c);
+    
+    dbg("[keyboard_routine] Unblocking first\n");
+    unblock_first(); // unblock first keyboard blocked     
+}
+
+//#################//
+//### PARCIAL 1 ###//
+//#################//
+
+struct list_head keyboard_blocked;
+
+void block_for_keyboard() {
+    struct task_struct* task = current();
+    // task->state = ST_BLOCKED; // Only needed if update_process_state_rr does not set it
+    update_process_state_rr(task, &keyboard_blocked);
+    sched_next_rr();
+}
+
+void unblock_first() {
+    if (list_empty(&keyboard_blocked)) {
+        return;
+    }
+    struct list_head* head = list_first(&keyboard_blocked);
+    list_del(head);
+    struct task_struct* task = list_head_to_task_struct(head);
+    task->state = ST_RUN;
+    list_add(head, &readyqueue); // Add to the first entry on the list
+    sched_next_rr();                       // force a task_switch
 }

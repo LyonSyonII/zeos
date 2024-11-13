@@ -112,3 +112,25 @@ ENTRY(unblock)
       
       popl %ebp
       ret
+
+
+# ################# #
+# ### PARCIAL 1 ### #
+# ################# #
+
+ENTRY(read)
+    pushl %ebp          # dynamic link
+    movl %esp, %ebp
+                        # no need to save edx
+    movl 8(%ebp), %edx  # edx = char* b
+    int $130            # SYSCALL custom for interrupt 130
+    
+    cmpl $0, %eax       # check if error
+    jge read_err_fi
+    pushl %eax          # pass error value to errno
+    call set_errno      # set errno to provided value
+    addl $4, %esp       # remove parameter from stack once call finished
+    movl $-1, %eax      # set return value to -1 as specified
+read_err_fi:
+    popl %ebx           # restore registers
+    ret

@@ -1,6 +1,7 @@
 /*
  * sys.c - Syscalls implementation
  */
+#include "keyboard.h"
 #include "list.h"
 #include <errno.h>
 #include <devices.h>
@@ -81,7 +82,7 @@ int sys_fork() {
   for (int pag = 0; pag < NUM_PAG_CODE; ++pag) {
     child_PT[PAG_LOG_INIT_CODE+pag].entry = parent_PT[PAG_LOG_INIT_CODE+pag].entry;
   }
-
+  
   // copy data pages
   for (int pag = 0; pag < NUM_PAG_DATA; ++pag) {
     int new_ph_pag = alloc_frame();
@@ -233,4 +234,19 @@ int sys_write(int fd, char * buffer, int size) {
 // Returns the number of clock ticks elapsed since the OS has booted.
 int sys_gettime() {
   return get_clock_ticks();
+}
+
+
+//#################//
+//### PARCIAL 1 ###//
+//#################//
+int sys_read(char* b) {
+  // Check if buffer is in address space of process
+  if (!access_ok(LECTURA, b, 1)) return -EFAULT;
+  
+  dbg("[sys_read] Blocked from sys_read\n");
+  block_for_keyboard();
+  dbg("[sys_read] Unblocked!\n");
+  
+  return 0;
 }

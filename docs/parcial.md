@@ -69,4 +69,143 @@ y así realizar la copia de toda la zona de datos con una única llamada a copy_
 Implementa esta modificación del sys_fork.
 </h3>
 
+<strong style="color:red">No tinc clar com fer-ho, dona la sensacio que a ZeOS nomes es pot allocar 1 directori per proces. </strong>
 
+## 3
+Queremos añadir a nuestro ZeOS una funcionalidad para leer 1 tecla del teclado :
+```c
+int read(char* b);
+```
+Esta llamada bloquea al proceso actual en una lista de bloqueados en el teclado
+hasta que se pulse una tecla, momento en que desbloqueará al proceso y lo pondrá
+en ejecución, copiando la tecla leida al buffer ´b´.  
+Si varios procesos usan esta llamada, el orden de desbloqueo tiene que seguir un orden FIFO.  
+Esta llamada debe devolver error si el buffer no se encuentra dentro del espacio de direcciones del
+proceso.  
+
+Esta llamada a sistema tiene que usar la interrupción 130 para realizar la
+entrada a sistema (en lugar de los mecanismos ya implementados) y debe ejecutar la
+rutina de servicio directamente pues será el único servicio accesible mediante esta
+interrupción.  
+El parámetro se pasará por registro.
+
+Implementa las funciones de sistema siguientes para gestionar la lista de bloqueados
+en el teclado:  
+- `void block_for_keyboard(void)` : bloquea el proceso actual.  
+- `void unblock_first()` : desbloquea y pasa a ejecutar el primer proceso de la
+  lista. Si no hay procesos bloqueados esta función no hace nada.
+
+La solución tiene que ser genérica y funcionar de forma eficiente para cualquier
+número de procesos.
+
+#### a) (0,75 puntos) Implementa el código del wrapper de la llamada read.
+> `libc_sys.S` (where wrappers are)
+```bash
+ENTRY(read)
+    pushl %ebp          # dynamic link
+    movl %esp, %ebp
+                        # no need to save edx
+    movl 8(%ebp), %edx  # edx = char* b
+    int $130            # SYSCALL custom for interrupt 130
+    
+    cmpl $0, %eax       # check if error
+    jge read_err_fi
+    pushl %eax          # pass error value to errno
+    call set_errno      # set errno to provided value
+    addl $4, %esp       # remove parameter from stack once call finished
+    movl $-1, %eax      # set return value to -1 as specified
+read_err_fi:
+    popl %ebx           # restore registers
+    ret
+```
+> `libc.h`
+```c
+int read(char* b);
+```
+
+#### b) (0,75 puntos) Implementa el código del handler de esta llamada a sistema.
+> `entry.S`
+```bash
+ENTRY(read_system_call_handler)
+    SAVE_ALL                # Save the current context
+    call sys_read           # Call service routine in sys.c
+    movl %eax, 0x18(%esp)   # Change the EAX value in the stack
+    RESTORE_ALL             # Restore the context
+    iret
+```
+
+#### c) (0,5 puntos) Indica qué estructuras de datos se tienen que añadir y/o modificar. Añade el código necesario para inicializarlas.
+- Tenemos que añadir una cola para los bloqueados del teclado.
+> `keyboard.h`
+```c
+extern struct list_head keyboard_blocked;
+```
+> `keyboard.c`
+```c
+struct list_head keyboard_blocked;
+```
+> `interrupt.c::setIdt()`
+```c
+set_handlers();
+INIT_LIST_HEAD(&keyboard_blocked); // new
+```
+
+#### d) (0.5 puntos) Implementa la rutina block_for_keyboard.
+> `keyboard.c`
+```c
+void block_for_keyboard() {
+    struct task_struct* task = current();
+    // task->state = ST_BLOCKED; // Only needed if update_process_state_rr does not set it
+  
+    update_process_state_rr(task, &keyboard_blocked);
+    sched_next_rr();
+}
+```
+#### e) (0.5 puntos) Implementa la rutina unblock_first.
+> `keyboard.c`
+```c
+void unblock_first() {
+    if (list_empty(&keyboard_blocked)) {
+        return;
+    }
+    struct list_head* head = list_first(&keyboard_blocked);
+    list_del(head);
+    struct task_struct* task = list_head_to_task_struct(head);
+    task->state = ST_RUN;
+    list_add(head, &readyqueue); // Add to the first entry on the list
+    sched_next_rr();             // force a task_switch
+}
+```
+#### f) (1 punto) Implementa el código de la rutina sys_read.
+> `sys.c`
+```c
+
+```
+#### g) (1 punto) ¿Es necesario modificar alguna otra llamada a sistema o parte del sistema para implementar por completo esta funcionalidad?<br>Si es así implementa los cambios necesarios.
+- Sí, tenemos que modificar la `keyboard_routine` para añadir el codigo necesario para desbloquear el proceso cuando se pulsa una tecla.
+> `keyboard.c::keyboard_routine`
+```c
+void keyboard_routine() {
+    Byte event = inb(0x60);
+    // make/break
+    // make: key pressed
+    // break: key released
+    Byte make = !(event >> 7); 
+    Byte code = event & 0x7f;
+    if (!make) return;
+    
+    unblock_first(); // unblock first keyboard_blocked
+}
+```
+
+- También se tiene que añadir el `read_system_call_handler` como interrupt handler
+> `entry.h`
+```c
+void read_system_call_handler();
+``` 
+
+> `interrupt.c::setIdt`
+```c
+setInterruptHandler(33, keyboard_handler, 0);
+setInterruptHandler(130, read_system_call_handler, 3); // new
+```

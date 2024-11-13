@@ -48,4 +48,10 @@ int println(const char* buffer);
 #define printf(template, ...) __printf(template, (const void*[]) { __VA_ARGS__ })
 void __printf(const char* template, const void* args[]);
 
+
+//#################//
+//### PARCIAL 1 ###//
+//#################//
+int read(char* b);
+
 #endif  /* __LIBC_H__ */

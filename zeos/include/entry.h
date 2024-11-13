@@ -11,4 +11,11 @@ void syscall_handler();
 
 void writeMsr(int msr, int data);
 
+
+//#################//
+//### PARCIAL 1 ###//
+//#################//
+
+void read_system_call_handler();
+
 #endif  /* __ENTRY_H__ */
