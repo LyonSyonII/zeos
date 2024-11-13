@@ -75,7 +75,7 @@ void init_idle (void) {
 	tu->stack[1023] = (DWord)cpu_idle; // @return
 	tu->stack[1022] = 0; // ebp = 0
 	tu->task.kernel_esp = (DWord)&tu->stack[1022]; // assignem la posició del esp que apunta a dalt de tot de la pila de sistema
-
+	
 	idle_task = &tu->task; //col·loquem a idle_task l'adreça del task_struct de idle
 }
 
