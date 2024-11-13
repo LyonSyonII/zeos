@@ -32,6 +32,9 @@ void keyboard_routine() {
     printc_xy(79, 24, c);
     
     dbg("[keyboard_routine] Unblocking first\n");
+    dbg("[keyboard_routine] Setting char_read to '%c'\n", &c);
+    char_read = c;
+    
     unblock_first(); // unblock first keyboard blocked     
 }
 
@@ -39,6 +42,7 @@ void keyboard_routine() {
 //### PARCIAL 1 ###//
 //#################//
 
+char char_read = 'X';
 struct list_head keyboard_blocked;
 
 void block_for_keyboard() {

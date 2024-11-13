@@ -168,6 +168,9 @@ void __printkf(const char* template, const void* args[]) {
       case 's':
         printk((char*)args[arg]);
         break;
+      case 'c':
+        printc(*(char*)args[arg]);
+        break;
       default:
         printk("%ERROR in arg %"); printkint(arg);
         break;

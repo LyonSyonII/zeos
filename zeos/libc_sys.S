@@ -132,5 +132,5 @@ ENTRY(read)
     addl $4, %esp       # remove parameter from stack once call finished
     movl $-1, %eax      # set return value to -1 as specified
 read_err_fi:
-    popl %ebx           # restore registers
+    popl %ebp
     ret

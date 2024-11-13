@@ -241,12 +241,15 @@ int sys_gettime() {
 //### PARCIAL 1 ###//
 //#################//
 int sys_read(char* b) {
+  dbg("[sys_read] received buffer addr %p\n", b);
   // Check if buffer is in address space of process
-  if (!access_ok(LECTURA, b, 1)) return -EFAULT;
+  if (!access_ok(ESCRIPTURA, b, 1)) return -EFAULT;
   
   dbg("[sys_read] Blocked from sys_read\n");
   block_for_keyboard();
   dbg("[sys_read] Unblocked!\n");
-  
+  dbg("[sys_read] Char received from keyboard: '%c'\n", &char_read);
+  *b = char_read; // set read character
+  dbg("[sys_read] Returning...\n");
   return 0;
 }

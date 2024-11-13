@@ -115,7 +115,7 @@ ENTRY(read)
     addl $4, %esp       # remove parameter from stack once call finished
     movl $-1, %eax      # set return value to -1 as specified
 read_err_fi:
-    popl %ebx           # restore registers
+    popl %ebp           # restore registers
     ret
 ```
 > `libc.h`
@@ -183,8 +183,10 @@ void unblock_first() {
 ```
 #### g) (1 punto) ¿Es necesario modificar alguna otra llamada a sistema o parte del sistema para implementar por completo esta funcionalidad?<br>Si es así implementa los cambios necesarios.
 - Sí, tenemos que modificar la `keyboard_routine` para añadir el codigo necesario para desbloquear el proceso cuando se pulsa una tecla.
+- Y para guardar esa tecla en una variable que `sys_read` pueda leer.
 > `keyboard.c::keyboard_routine`
 ```c
+char char_read;
 void keyboard_routine() {
     Byte event = inb(0x60);
     // make/break
@@ -194,6 +196,7 @@ void keyboard_routine() {
     Byte code = event & 0x7f;
     if (!make) return;
     
+    char_read = char_map[code];
     unblock_first(); // unblock first keyboard_blocked
 }
 ```

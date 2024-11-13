@@ -90,12 +90,12 @@ int __attribute__((__section__(".text.main"))) main(void) {
 
   // test_spawn_maximum();
   // test_scheduling_multiple_processes();
-  
-  println("Blocking...");
-  char result;
-  int ret = read(&result);
-  printf("Read returned %d, with character %c", &ret, &result);
-  
+
   // should never reach
-  while (1);
+  while (1) {
+    println("Blocking...");
+    char* result = "'X'";
+    int ret = read(&result[1]);
+    printf("Read returned %d, with character %s\n", &ret, result);
+  }
 }
