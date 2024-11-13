@@ -151,6 +151,10 @@ INIT_LIST_HEAD(&keyboard_blocked); // new
 ```
 
 #### d) (0.5 puntos) Implementa la rutina block_for_keyboard.
+> `keyboard.h`
+```c
+void block_for_keyboard();
+```
 > `keyboard.c`
 ```c
 void block_for_keyboard() {
@@ -162,6 +166,10 @@ void block_for_keyboard() {
 }
 ```
 #### e) (0.5 puntos) Implementa la rutina unblock_first.
+> `keyboard.h`
+```c
+void unblock_first();
+```
 > `keyboard.c`
 ```c
 void unblock_first() {
@@ -179,11 +187,22 @@ void unblock_first() {
 #### f) (1 punto) Implementa el código de la rutina sys_read.
 > `sys.c`
 ```c
-
+int sys_read(char* b) {
+  // Check if buffer is in address space of process
+  if (!access_ok(LECTURA, b, 1)) return -EFAULT;
+  
+  block_for_keyboard();
+  *b = char_read;
+  return 0;
+}
 ```
 #### g) (1 punto) ¿Es necesario modificar alguna otra llamada a sistema o parte del sistema para implementar por completo esta funcionalidad?<br>Si es así implementa los cambios necesarios.
 - Sí, tenemos que modificar la `keyboard_routine` para añadir el codigo necesario para desbloquear el proceso cuando se pulsa una tecla.
 - Y para guardar esa tecla en una variable que `sys_read` pueda leer.
+> `keyboard.h`
+```c
+extern char char_read;
+```
 > `keyboard.c::keyboard_routine`
 ```c
 char char_read;
