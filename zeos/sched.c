@@ -54,10 +54,22 @@ int allocate_DIR(struct task_struct *t)
 void cpu_idle(void)
 {
 	__asm__ __volatile__("sti": : :"memory");
+	
+	while(1) {
+		// PARCIAL 2
+		struct list_head *element, *n;
+		list_for_each_safe(element, n, &idle_task->children) {
+			struct task_struct* child = list_entry(element, struct task_struct, parent_list);
+			if (child->state != ST_ZOMBIE) continue;
 
-	while(1)
-	{
-	;
+			printkf("[IDLE] Killing PID %d\n", &child->PID);
+			
+			// kill zombie
+			child->parent = NULL;
+			child->PID = -1;
+			list_del(&child->parent_list);
+			update_process_state_rr( child, &freequeue);
+  		}
 	}
 }
 
@@ -108,6 +120,8 @@ void init_sched() {
 	init_freequeue();
 	INIT_LIST_HEAD(&readyqueue);
 	INIT_LIST_HEAD(&blocked);
+
+	INIT_LIST_HEAD(&zombies); // PARCIAL 2
 }
 
 struct task_struct* current()
@@ -224,5 +238,21 @@ void init_freequeue() {
 	INIT_LIST_HEAD(&freequeue);
 	for (int i = 0; i < NR_TASKS; i++) {
 		list_add_tail(&task[i].task.list, &freequeue);
+	}
+}
+
+
+// PARCIAL 2 //
+struct list_head zombies;
+void block() {
+	if (current()->state != ST_BLOCKED) {
+		update_process_state_rr(current(), &blocked);
+		dbg("[PID %d] Blocked process\n", &current()->PID);
+		sched_next_rr();
+	}
+}
+void unblock(struct task_struct* pcb) {
+	if (pcb->state == ST_BLOCKED) {
+		update_process_state_rr(pcb, &readyqueue);
 	}
 }

@@ -153,3 +153,15 @@ ENTRY(read_system_call_handler)
     movl %eax, 0x18(%esp)   # Change the EAX value in the stack
     RESTORE_ALL             # Restore the context
     iret
+
+
+# ################# #
+# ### PARCIAL 2 ### #
+# ################# #
+
+ENTRY(waitpid_system_call_handler)
+    SAVE_ALL                # Save the current context
+    call sys_waitpid        # Call service routine in sys.c
+    movl %eax, 0x18(%esp)   # Change the EAX value in the stack
+    RESTORE_ALL             # Restore the context
+    iret

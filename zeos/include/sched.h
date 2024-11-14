@@ -13,21 +13,29 @@
 #define NR_TASKS      10
 #define KERNEL_STACK_SIZE	1024
 
-enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
+enum state_t { 
+  ST_RUN, 
+  ST_READY, 
+  ST_BLOCKED,
+  ST_ZOMBIE
+};
 
 struct task_struct {
   int PID;			/* Process ID. This MUST be the first field of the struct. */
   page_table_entry * dir_pages_baseAddr;
   DWord kernel_esp;
   struct list_head list; /* Anchor to the `ready` queue. */
-
+  
   struct list_head children; /* List of children of this process. */
   struct list_head parent_list; /* Anchor to the parent's children list.  */
   struct task_struct* parent; /* Parent of this process. */
-
+  
   enum state_t state; /* Scheduling state of the process. */
   int quantum; /* Default quantum assigned to the process. */
   int pending_unblocks; /* If > 0, this process is blocked. */
+
+  int waitpid_pid; // new
+  int exit_error;  // new
 };
 
 union task_union {
@@ -91,6 +99,12 @@ int get_new_PID();
 int get_quantum (struct task_struct *t);
 void set_quantum (struct task_struct *t, int new_quantum);
 void reset_task1_quantum();
+
+
+// PARCIAL 2
+extern struct list_head zombies;
+void block();
+void unblock(struct task_struct* pcb);
 
 
 #endif  /* __SCHED_H__ */

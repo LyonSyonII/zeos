@@ -81,6 +81,44 @@ void test_scheduling_multiple_processes() {
   }
 }
 
+void test_parcial1_read() {
+  while (1) {
+    println("Blocking...");
+    char* result = "'X'";
+    int ret = read(&result[1]);
+    printf("Read returned %d, with character %s\n", &ret, result);
+  }
+}
+
+void test_parcial2_waitpid() {
+  int child = fork();
+  
+  int time, prev_time;
+  while (1) {
+    time = gettime();
+    if (time == prev_time) continue;
+    prev_time = time;
+
+    if (time < 210) printf("[Sched] %d\n", &time);
+    
+
+    if (child == 0) {
+      if (time > 200) {
+        println("[Child] Exiting...");
+        exit(0);
+      }
+    } else if (time > 200) {
+      println("[Parent] Waiting...");
+      int error;
+      waitpid(child, &error);
+      
+      printf("Unblocked by child with error = %d\n", &error);
+      exit(0);
+    }
+    
+  }
+}
+
 int __attribute__((__section__(".text.main"))) main(void) {
   // Next line, tries to move value 0 to CR3 register. This register is a
   // privileged one, and so it will raise an exception
@@ -90,12 +128,10 @@ int __attribute__((__section__(".text.main"))) main(void) {
 
   // test_spawn_maximum();
   // test_scheduling_multiple_processes();
-
+  // test_parcial1_read();
+  test_parcial2_waitpid();
   // should never reach
   while (1) {
-    println("Blocking...");
-    char* result = "'X'";
-    int ret = read(&result[1]);
-    printf("Read returned %d, with character %s\n", &ret, result);
+  
   }
 }

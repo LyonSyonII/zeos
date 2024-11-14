@@ -135,10 +135,10 @@ int sys_fork() {
   return child_task->task.PID;
 }
 
-void sys_exit() {
+/* void sys_exit() {
   struct task_struct* task = current();
   dbg("[PID %d] Exiting process\n", &task->PID);
-
+  
   free_user_pages(task);
   task->PID = -1;
   
@@ -161,7 +161,7 @@ void sys_exit() {
   
   update_process_state_rr(task, &freequeue);
   sched_next_rr();
-}
+} */
 
 void sys_block() {
   struct task_struct* task = current();
@@ -170,6 +170,7 @@ void sys_block() {
     return;
   }
   update_process_state_rr(task, &blocked);
+  dbg("[PID %d] Blocked process\n", &task->PID);
   sched_next_rr();
 }
 
@@ -251,5 +252,72 @@ int sys_read(char* b) {
   dbg("[sys_read] Char received from keyboard: '%c'\n", &char_read);
   *b = char_read; // set read character
   dbg("[sys_read] Returning...\n");
+  return 0;
+}
+
+//#################//
+//### PARCIAL 2 ###//
+//#################//
+void sys_exit(int error) {
+  struct task_struct* task = current();
+  
+  free_user_pages(task);
+  
+  // add remaining children to idle process
+  struct list_head *element, *n;
+  list_for_each_safe(element, n, &task->children) {
+    struct task_struct* children = list_entry(element, struct task_struct, parent_list);
+    list_del(element);      // remove from old list
+    list_add_tail(element, &idle_task->children); // add to new list
+    children->parent = idle_task; // update parent
+  }
+  
+  task->exit_error = error;
+  if (task->parent) {
+    // if parent is waiting, unblock it
+    if (task->parent->waitpid_pid == task->PID) {
+      unblock(task->parent);
+      dbg("[Child-K] Unblocked parent\n");
+    }
+    // add to zombies list
+    task->state = ST_ZOMBIE;
+    list_add_tail(&task->list, &zombies);
+  } else {
+    update_process_state_rr(task, &freequeue);
+  }
+  
+  sched_next_rr();
+}
+
+int sys_waitpid(int pid, int* error) {
+  struct task_struct* parent = current();
+  struct task_struct* child_task = NULL;
+  
+  struct list_head* pos;
+  list_for_each(pos, &parent->children) {
+    struct task_struct* tmp = children_head_to_task_struct(pos);
+    if (tmp->PID == pid) {
+      child_task = tmp;
+      break;
+    }
+  }
+  // No child found with PID = pid
+  if (child_task == NULL) return -ECHILD;
+  
+  // If child is not already dead, block
+  if (child_task->state != ST_ZOMBIE) {
+    parent->waitpid_pid = pid;
+    block();
+  }
+  
+  // child has unblocked us, or is dead
+  *error = child_task->exit_error;
+  
+  // finally remove process
+  child_task->parent = NULL;
+  child_task->PID = -1;
+  list_del(&child_task->parent_list);
+  update_process_state_rr( child_task, &freequeue);
+  
   return 0;
 }

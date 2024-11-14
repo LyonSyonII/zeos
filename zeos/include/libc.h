@@ -54,4 +54,9 @@ void __printf(const char* template, const void* args[]);
 //#################//
 int read(char* b);
 
+//#################//
+//### PARCIAL 2 ###//
+//#################//
+int waitpid(int pid, int* error);
+
 #endif  /* __LIBC_H__ */

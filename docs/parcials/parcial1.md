@@ -52,10 +52,16 @@ $ objdump -d libzeos.a | less
 
 ### c) (1 punto) Dado un fichero exam.o que contiene la función shared implementada
 ### ¿Como debe ser la línea (o líneas) de comandos para linkar este objeto y que puedas usar la función tanto desde el código de sistema como de usuario?
-Añadir al Makefile:
+- Añadir al Makefile:
 ```bash
 SYSOBJ = ... exam.o
 USROBJ = exam.o
+```
+
+- O con los comandos:
+```bash
+ld -g -melf_i386 -T system.lds -o system system test.o
+ld -g -melf_i386 -T user.lds -o user user test.o
 ```
 
 ## 2
@@ -229,5 +235,5 @@ void read_system_call_handler();
 > `interrupt.c::setIdt`
 ```c
 setInterruptHandler(33, keyboard_handler, 0);
-setInterruptHandler(130, read_system_call_handler, 3); // new
+setTrapHandler(130, read_system_call_handler, 3); // new
 ```

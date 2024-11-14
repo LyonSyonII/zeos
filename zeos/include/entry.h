@@ -16,6 +16,9 @@ void writeMsr(int msr, int data);
 //### PARCIAL 1 ###//
 //#################//
 
-void read_system_call_handler();
+void read_system_call_handler(); // PARCIAL 1
+
+void waitpid_system_call_handler(); // PARCIAL 2
+
 
 #endif  /* __ENTRY_H__ */

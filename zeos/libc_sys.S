@@ -89,6 +89,7 @@ ENTRY(exit)
       pushl %ebp
       movl %esp, %ebp
       
+      movl 8(%ebp), %edx  # edx = int error
       SYSCALL(1)
       
       popl %ebp
@@ -132,5 +133,27 @@ ENTRY(read)
     addl $4, %esp       # remove parameter from stack once call finished
     movl $-1, %eax      # set return value to -1 as specified
 read_err_fi:
+    popl %ebp
+    ret
+
+# ################# #
+# ### PARCIAL 2 ### #
+# ################# #
+
+ENTRY(waitpid)
+    pushl %ebp          # dynamic link
+    movl %esp, %ebp
+                        # no need to save edx/ecx
+    movl 8(%ebp), %edx  # edx = int pid
+    movl 12(%ebp), %ecx # ecx = int* error
+    int $131            # SYSCALL custom for interrupt 131
+    
+    cmpl $0, %eax       # check if error
+    jge waitpid_err_fi
+    pushl %eax          # pass error value to errno
+    call set_errno      # set errno to provided value
+    addl $4, %esp       # remove parameter from stack once call finished
+    movl $-1, %eax      # set return value to -1 as specified
+waitpid_err_fi:
     popl %ebp
     ret

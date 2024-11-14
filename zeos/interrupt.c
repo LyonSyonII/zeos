@@ -56,7 +56,7 @@ void setTrapHandler(int vector, void (*handler)(), int maxAccessibleFromPL)
   /* Changed to 0x8e00 to convert it to an 'interrupt gate' and so
      the system calls will be thread-safe. */
   flags |= 0x8E00;    /* P = 1, D = 1, Type = 1110 (Interrupt Gate) */
-
+  
   idt[vector].lowOffset       = lowWord((DWord)handler);
   idt[vector].segmentSelector = __KERNEL_CS;
   idt[vector].flags           = flags;
@@ -79,7 +79,8 @@ void setIdt()
   setInterruptHandler(32, clock_handler, 0);
   setInterruptHandler(33, keyboard_handler, 0);
 
-  setInterruptHandler(130, read_system_call_handler, 3); // PARCIAL 1
+  setTrapHandler(130, read_system_call_handler, 3); // PARCIAL 1
+  setTrapHandler(131, waitpid_system_call_handler, 3); // PARCIAL 2
   
   set_idt_reg(&idtR);
 }

@@ -25,7 +25,7 @@ void keyboard_routine() {
     if (!make) return;
     
     char c = char_map[code];
-
+    
     if (c == '\0') {
         c = 'C';
     }
