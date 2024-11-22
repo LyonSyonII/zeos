@@ -29,7 +29,17 @@
 - utils.c: copy_from_XXX, access_ok, itox, ...
 
 ## TO-DO
-
+- (1 point) Keyboard support stores keys in a circular buffer.
+- (1 point) Functional getKey feature.
+- (,5 points) Functional gotoXY feature.
+- (1 points) Functional changeColor and clrscr features.
+- (2 points) Functional create_thread and exit system_call.
+- (2 point) Functional synchronization support
+- (1 points) Functional memRegGet and memRegDel features.
+- (1 point) Functional game using different implemented features.
+- (,5 point) Remove the requirement of exit at the finalization of the thread.
+- [Optional] (1 point) Challenge: Implement a user level slab allocator on top of
+‘memRegGet’ regions.
 
 
 ### Notes
