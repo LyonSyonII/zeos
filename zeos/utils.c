@@ -74,8 +74,8 @@ int access_ok(int type, const void * addr, unsigned long size)
   {
     case VERIFY_WRITE:
       /* Should suppose no support for automodifyable code */
-      if ((addr_ini>=USER_FIRST_PAGE)&&
-          (addr_fin<=USER_FIRST_PAGE+NUM_PAG_DATA))
+      if ((addr_ini>=USER_FIRST_PAGE+NUM_PAG_CODE)&&
+          (addr_fin<=USER_FIRST_PAGE+NUM_PAG_CODE+NUM_PAG_DATA))
 	  return 1;
     default:
       if ((addr_ini>=USER_FIRST_PAGE)&&
@@ -131,32 +131,14 @@ unsigned long get_ticks(void) {
         return ticks;
 }
 
-
-
-// custom defined
-void itox(int a, char *b)
+void memset(void *s, unsigned char c, int size)
 {
-  int i, i1;
-  char c;
+  unsigned char *m=(unsigned char *)s;
   
-  if (a==0) { b[0]='0'; b[1]=0; return ;}
+  int i;
   
-  i=0;
-  while (a>0)
+  for (i=0; i<size; i++)
   {
-    b[i]=(a%16)+'0';
-    if (b[i] > '9') {
-      b[i] = b[i] - ('9'+1) + 'A';
-    }
-    a=a/16;
-    i++;
+    m[i]=c;
   }
-  
-  for (i1=0; i1<i/2; i1++)
-  {
-    c=b[i1];
-    b[i1]=b[i-i1-1];
-    b[i-i1-1]=c;
-  }
-  b[i]=0;
 }

@@ -6,46 +6,29 @@
 #ifndef __LIBC_H__
 #define __LIBC_H__
 
-#include "stats.h"
+#include <stats.h>
 
-#define STDOUT 1
+extern int errno;
+
+int write(int fd, char *buffer, int size);
 
 void itoa(int a, char *b);
 
-int strlen(const char *a);
+int strlen(char *a);
 
-void perror(void);
-
-int write(int fd, const char *buffer, int size);
-
-int gettime();
+void perror();
 
 int getpid();
-// Get Parent PID
-int getppid();
 
 int fork();
 
 void exit();
 
-void block();
+int yield();
 
-int unblock(int pid);
+int get_stats(int pid, struct stats *st);
 
-/// Custom methods
-
-// Prints the provided buffer.
-int print(const char* buffer);
-// Prints the provided character.
-int printchar(char c);
-// Prints the provided integer.
-int printint(int i);
-// Prints the provided integer with a newline at the end.
-int printintln(int i);
-// Prints the provided buffer with a newline at the end.
-int println(const char* buffer);
-// Supports: `%d`, `%p`, `%x`, `%s`.
-#define printf(template, ...) __printf(template, (const void*[]) { __VA_ARGS__ })
-void __printf(const char* template, const void* args[]);
+void SAVE_REGS(void);
+void RESTORE_REGS(void);
 
 #endif  /* __LIBC_H__ */

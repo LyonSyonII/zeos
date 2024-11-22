@@ -2,9 +2,6 @@
  * mm.c - Memory Management: Paging & segment memory management
  */
 
-
-#include "io.h"
-#include "mm_address.h"
 #include <types.h>
 #include <mm.h>
 #include <segment.h>
@@ -72,32 +69,25 @@ for (j=0; j< NR_TASKS; j++) {
       pagusr_table[j][i].bits.rw = 1;
       pagusr_table[j][i].bits.present = 1;
     }
+  /* Protect the task array by using a couple of invalid pages before and after the task array */
+  pagusr_table[j][PH_PAGE((DWord)(&protected_tasks[0]))].bits.present = 0;
+  pagusr_table[j][PH_PAGE((DWord)(&protected_tasks[11]))].bits.present = 0;
 }
 }
 
-int dealloc_user_pages(page_table_entry * process_PT, int code_end, int data_end, int error) {
-  for (int pag = 0; pag < code_end; ++pag) {
-    free_frame(process_PT[PAG_LOG_INIT_CODE+pag].bits.pbase_addr);
-  }
-  for (int pag = 0; pag < data_end; ++pag) {
-    free_frame(process_PT[PAG_LOG_INIT_DATA+pag].bits.pbase_addr);
-  }
-  return error;
-}
+
 
 /* Initialize pages for initial process (user pages) */
-int set_user_pages( struct task_struct *task )
+void set_user_pages( struct task_struct *task )
 {
-  int pag; 
-  int new_ph_pag;
-  page_table_entry * process_PT =  get_PT(task);
+ int pag; 
+ int new_ph_pag;
+ page_table_entry * process_PT =  get_PT(task);
 
 
   /* CODE */
   for (pag=0;pag<NUM_PAG_CODE;pag++){
-	  new_ph_pag=alloc_frame();
-    if (new_ph_pag < 0) return dealloc_user_pages(process_PT, pag, 0, new_ph_pag);
-  	
+	new_ph_pag=alloc_frame();
   	process_PT[PAG_LOG_INIT_CODE+pag].entry = 0;
   	process_PT[PAG_LOG_INIT_CODE+pag].bits.pbase_addr = new_ph_pag;
   	process_PT[PAG_LOG_INIT_CODE+pag].bits.user = 1;
@@ -106,17 +96,13 @@ int set_user_pages( struct task_struct *task )
   
   /* DATA */ 
   for (pag=0;pag<NUM_PAG_DATA;pag++){
-	  new_ph_pag=alloc_frame();
-    if (new_ph_pag < 0) return dealloc_user_pages(process_PT, NUM_PAG_CODE, pag, new_ph_pag);
-  	
+	new_ph_pag=alloc_frame();
   	process_PT[PAG_LOG_INIT_DATA+pag].entry = 0;
   	process_PT[PAG_LOG_INIT_DATA+pag].bits.pbase_addr = new_ph_pag;
   	process_PT[PAG_LOG_INIT_DATA+pag].bits.user = 1;
   	process_PT[PAG_LOG_INIT_DATA+pag].bits.rw = 1;
   	process_PT[PAG_LOG_INIT_DATA+pag].bits.present = 1;
   }
-
-  return 1;
 }
 
 /* Writes on CR3 register producing a TLB flush */
@@ -236,28 +222,19 @@ int alloc_frame( void )
         i += 2; /* NOTE: There will be holes! This is intended. 
 			DO NOT MODIFY! */
     }
-    
+
     return -1;
 }
 
-void free_user_pages(struct task_struct *task) {
-  page_table_entry * process_PT =  get_PT(task);
-
-  // free data pages
-  for (int pag = 0; pag < NUM_PAG_DATA; pag++) {
-    free_frame(process_PT[PAG_LOG_INIT_DATA+pag].bits.pbase_addr);
-    process_PT[PAG_LOG_INIT_DATA+pag].entry = 0;
-  }
-  
-  if (task->parent != NULL && task->parent != idle_task) return;
-  if (!list_empty(&task->children)) return;
-  
-  dbg("[PID %d] Freeing code pages\n", &task->PID);
-  // If the process has no children, free code pages too
-  for (int pag = 0; pag < NUM_PAG_CODE; pag++) {
-    free_frame(process_PT[PAG_LOG_INIT_CODE+pag].bits.pbase_addr);
-    process_PT[PAG_LOG_INIT_CODE+pag].entry = 0;
-  }
+void free_user_pages( struct task_struct *task )
+{
+ int pag;
+ page_table_entry * process_PT =  get_PT(task);
+    /* DATA */
+ for (pag=0;pag<NUM_PAG_DATA;pag++){
+	 free_frame(process_PT[PAG_LOG_INIT_DATA+pag].bits.pbase_addr);
+         process_PT[PAG_LOG_INIT_DATA+pag].entry = 0;
+ }
 }
 
 

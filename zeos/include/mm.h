@@ -21,9 +21,8 @@ extern page_table_entry dir_pages[NR_TASKS][TOTAL_PAGES];
 int init_frames( void );
 int alloc_frame( void );
 void free_frame( unsigned int frame );
-int set_user_pages( struct task_struct *task );
-void free_user_pages(struct task_struct *task);
-int dealloc_user_pages(page_table_entry * process_PT, int code_end, int data_end, int error);
+void set_user_pages( struct task_struct *task );
+
 
 extern Descriptor  *gdt;
 

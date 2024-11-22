@@ -30,50 +30,12 @@
 
 ## TO-DO
 
-- [x] Adapt the task_struct definition.
-- [x] Initialize a free queue.
-- [x] Initialize a ready queue.
-- [x] Implement the initial processes initialization.
-- [x] Implement the task_switch function.
-- [x] Implement the inner_task_switch function.
-- [x] Implement the getpid system call.
-- [x] Implement the fork system call.
-  - [x] Basic implementation
-  - [x] Add error handling
-- [x] Implement process scheduling.
-  - [x] Basic implementation
-  - [x] Test more cases
-- [x] Implement the exit system call.
-- [x] Implement the block system call.
-- [x] Implement the unblock system call
-- [ ] Modify user.c explanation to account for changed behaviour
+
 
 ### Notes
-- modificar task struct (pcb)
-	- 10 pcbs (task_struct tasks[10])
-- freequeue (pcbs lliures)
-- readyqueue (processos en estat de ready)
-- inicialitzar processos
-	- init: proces d'usuari 
-		- init_mm (inicialitza la mmu ...)
-			- cr3 (Apunta a DIR, no TP)
-			- tants DIR com processos (i TP)
-				- Per tant 10 DIR i 10 TP
-		- set_user_pages()
-	- idle: proces a executar quan no n'hi ha cap a la readyqueue
-	- init -> idle -> init
-	- init -> init
-
-- scheduler
-	- cada cert temps canviem de proces (task_switch)
-	- no ho hem de fer a la interrupcio de rellotge
-		- millor fer-ho a la interrupcio de teclat per debugar
-- task_switch(new)
-  - modifiquem cr3, tss i msr
-  - guardem registres abans de canviar de proces
-    - esi, edi, ebx
-  - canviem esp a nou proces
-  - restaurem quan tornem
+- fork nomes duplica el thread actual
+- memregget: busca una regio del proces nova
+  - memregdel: hem d'esborrar la regio, tenint nomes un punter (guardar info sobre la mida de la regio)
 
 ### E1
 - [x] Complete Zeos code.
@@ -94,3 +56,22 @@
 - [x] Implement the clock management.
 - [x] Implement the gettime system call.
 - [x] Implement the page fault exception management.
+
+### E2
+- [x] Adapt the task_struct definition.
+- [x] Initialize a free queue.
+- [x] Initialize a ready queue.
+- [x] Implement the initial processes initialization.
+- [x] Implement the task_switch function.
+- [x] Implement the inner_task_switch function.
+- [x] Implement the getpid system call.
+- [x] Implement the fork system call.
+  - [x] Basic implementation
+  - [x] Add error handling
+- [x] Implement process scheduling.
+  - [x] Basic implementation
+  - [x] Test more cases
+- [x] Implement the exit system call.
+- [x] Implement the block system call.
+- [x] Implement the unblock system call
+- [ ] Modify user.c explanation to account for changed behaviour

@@ -13,9 +13,6 @@ int access_ok(int type, const void *addr, unsigned long size);
 
 unsigned long get_ticks(void);
 
-// custom defined
-
-// Integer to hexadecimal
-void itox(int a, char *b);
+void memset(void *s, unsigned char c, int size);
 
 #endif
