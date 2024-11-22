@@ -14,6 +14,51 @@ ENTRY(SYSENTER_RETURN)
 	pop %ecx
 	ret
 
+
+/* Common code for negative return */
+nok:
+	neg %eax
+	mov %eax, errno
+	mov $-1, %eax
+	popl %ebp
+	ret
+
+
+/* void exit() */
+ENTRY(exit)
+	pushl %ebp
+	movl %esp, %ebp
+	movl $1, %eax
+	call syscall_sysenter
+	popl %ebp
+	ret
+
+/* int fork() */
+ENTRY(fork)
+	pushl %ebp
+	movl %esp, %ebp
+	movl $2, %eax
+	call syscall_sysenter
+	test %eax, %eax
+	js nok	// if (eax < 0) -->
+	popl %ebp
+	ret
+
+/* int threadCreateWithStack(void (*function)(void *arg), int N, void *parameter) */
+ENTRY(threadCreateWithStack)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx
+	movl 8(%ebp), %ebx
+	movl 12(%ebp), %ecx
+	movl $3, %eax
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok	// if (eax < 0) -->
+	popl %ebp
+	ret
+
 /* int write(int fd, char *buffer, int size) */
 ENTRY(write)
 	pushl %ebp
@@ -30,11 +75,52 @@ ENTRY(write)
 	popl %ebp
 	ret
 
-/* Common code for negative return */
-nok:
-	neg %eax
-	mov %eax, errno
-	mov $-1, %eax
+/* int gotoXY(int x, int y) */
+ENTRY(gotoXY)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx // save ebx
+	movl $5, %eax
+	movl 8(%ebp), %ebx //x
+	movl 12(%ebp), %ecx //y
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok
+	popl %ebp
+	ret
+
+/* int changeColour(int fg, int bg) */
+ENTRY(changeColour)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx
+	movl 8(%ebp), %ebx
+	movl 12(%ebp), %ecx
+	movl $6, %eax
+	call syscall_sysenter
+	popl %ebx
+	popl %ebp
+	ret
+
+/* int clrscr(char* b) */
+ENTRY(changeColour)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx
+	movl 8(%ebp), %ebx
+	movl $7, %eax
+	call syscall_sysenter
+	popl %ebx
+	popl %ebp
+	ret
+
+/* int yield() */
+ENTRY(yield)
+	pushl %ebp
+	movl %esp, %ebp
+	movl $13, %eax
+	call syscall_sysenter
 	popl %ebp
 	ret
 
@@ -56,32 +142,32 @@ ENTRY(getpid)
 	popl %ebp
 	ret
 
-/* int fork() */
-ENTRY(fork)
+/* int getKey(char* b, int timeout) */
+ENTRY(getKey)
 	pushl %ebp
 	movl %esp, %ebp
-	movl $2, %eax
+	pushl %ebx
+	movl 8(%ebp), %ebx
+	movl 12(%ebp), %ecx
+	movl $21, %eax
 	call syscall_sysenter
+	popl %ebx
 	test %eax, %eax
-	js nok	// if (eax < 0) -->
+	js nok
 	popl %ebp
 	ret
 
-/* void exit() */
-ENTRY(exit)
+/* sem_t* semCreate(int initial_value) */
+ENTRY(semCreate)
 	pushl %ebp
 	movl %esp, %ebp
-	movl $1, %eax
+	pushl %ebx
+	movl 8(%ebp), %ebx
+	movl $21, %eax
 	call syscall_sysenter
-	popl %ebp
-	ret
-
-/* int yield() */
-ENTRY(yield)
-	pushl %ebp
-	movl %esp, %ebp
-	movl $13, %eax
-	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok
 	popl %ebp
 	ret
 

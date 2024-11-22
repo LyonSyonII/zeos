@@ -18,6 +18,8 @@ int strlen(char *a);
 
 void perror();
 
+int gettime();
+
 int getpid();
 
 int fork();
@@ -25,6 +27,28 @@ int fork();
 void exit();
 
 int yield();
+
+int getKey(char* b, int timeout);
+
+int gotoXY(int x, int y);
+
+int changeColour(int fg, int bg);
+
+int clrscr(char* b);
+
+int threadCreateWithStack(void (*function)(void *arg), int N, void *parameter);
+
+sem_t* semCreate(int initial_value);
+
+int semWait(sem_t* s);
+
+int semSignal(sem_t* s);
+
+int semDestroy(sem_t* s);
+
+char* memRegGet(int num_pages);
+
+int memRegDel(char* m);
 
 int get_stats(int pid, struct stats *st);
 
