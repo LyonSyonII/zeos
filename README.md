@@ -45,7 +45,7 @@
 ### Notes
 - fork nomes duplica el thread actual
 - memregget: busca una regio del proces nova
-  - memregdel: hem d'esborrar la regio, tenint nomes un punter (guardar info sobre la mida de la regio)
+  - memregdel: hem d'esborrar la regio, tenint nomes un punter (guardar info sobre la mida de la regio a una pagina anterior [metadata])
 
 ### E1
 - [x] Complete Zeos code.

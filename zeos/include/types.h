@@ -12,6 +12,8 @@ typedef unsigned char       Byte;
 typedef unsigned short int  Word;
 typedef unsigned long       DWord;
 
+typedef unsigned int uint;
+
 #define highWord(address) (Word)(((address) >> 16) & 0xFFFF)
 #define lowWord(address) (Word)((address) & 0xFFFF)
 #define midByte(address) (Byte)(((address) >> 16) & 0xFF)
