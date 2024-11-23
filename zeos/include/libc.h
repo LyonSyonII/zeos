@@ -6,9 +6,12 @@
 #ifndef __LIBC_H__
 #define __LIBC_H__
 
+#include "types.h"
 #include <stats.h>
 
 extern int errno;
+
+typedef struct { } sem_t;
 
 int write(int fd, char *buffer, int size);
 
@@ -54,5 +57,7 @@ int get_stats(int pid, struct stats *st);
 
 void SAVE_REGS(void);
 void RESTORE_REGS(void);
+
+// custom
 
 #endif  /* __LIBC_H__ */
