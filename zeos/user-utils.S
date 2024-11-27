@@ -79,10 +79,10 @@ ENTRY(write)
 ENTRY(gotoXY)
 	pushl %ebp
 	movl %esp, %ebp
-	pushl %ebx // save ebx
-	movl $5, %eax
+	pushl %ebx  // save EBX
 	movl 8(%ebp), %ebx //x
 	movl 12(%ebp), %ecx //y
+	movl $5, %eax
 	call syscall_sysenter
 	popl %ebx
 	test %eax, %eax
@@ -104,7 +104,7 @@ ENTRY(changeColour)
 	ret
 
 /* int clrscr(char* b) */
-ENTRY(changeColour)
+ENTRY(clrscr)
 	pushl %ebp
 	movl %esp, %ebp
 	pushl %ebx
@@ -115,20 +115,20 @@ ENTRY(changeColour)
 	popl %ebp
 	ret
 
-/* int yield() */
-ENTRY(yield)
-	pushl %ebp
-	movl %esp, %ebp
-	movl $13, %eax
-	call syscall_sysenter
-	popl %ebp
-	ret
-
 /* int gettime() */
 ENTRY(gettime)
 	pushl %ebp
 	movl %esp, %ebp
 	movl $10, %eax
+	call syscall_sysenter
+	popl %ebp
+	ret
+
+/* int yield() */
+ENTRY(yield)
+	pushl %ebp
+	movl %esp, %ebp
+	movl $13, %eax
 	call syscall_sysenter
 	popl %ebp
 	ret
@@ -163,7 +163,77 @@ ENTRY(semCreate)
 	movl %esp, %ebp
 	pushl %ebx
 	movl 8(%ebp), %ebx
-	movl $21, %eax
+	movl $28, %eax
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok
+	popl %ebp
+	ret
+
+/* int semWait(sem_t* s) */
+ENTRY(semWait)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx
+	movl 8(%ebp), %ebx
+	movl $29, %eax
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok
+	popl %ebp
+	ret
+
+/* int semSignal(sem_t* s) */
+ENTRY(semSignal)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx
+	movl 8(%ebp), %ebx
+	movl $30, %eax
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok
+	popl %ebp
+	ret
+
+/* int semDestroy(sem_t* s) */
+ENTRY(semDestroy)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx
+	movl 8(%ebp), %ebx
+	movl $31, %eax
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok
+	popl %ebp
+	ret
+
+/* char* memRegGet(int num_pages) */
+ENTRY(memRegGet)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx
+	movl 8(%ebp), %ebx
+	movl $32, %eax
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok
+	popl %ebp
+	ret
+
+/* int memRegDel(char* m) */
+ENTRY(memRegDel)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx
+	movl 8(%ebp), %ebx
+	movl $33, %eax
 	call syscall_sysenter
 	popl %ebx
 	test %eax, %eax
