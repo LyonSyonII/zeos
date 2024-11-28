@@ -1,0 +1,5 @@
+{
+    "search.exclude": {
+        "zeos-old/*": true
+    }
+}
