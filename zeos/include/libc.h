@@ -9,6 +9,8 @@
 #include "types.h"
 #include <stats.h>
 
+#define STDOUT 1
+
 extern int errno;
 
 typedef struct { } sem_t;
@@ -59,5 +61,19 @@ void SAVE_REGS(void);
 void RESTORE_REGS(void);
 
 // custom
+
+// Prints the provided buffer.
+int print(const char* buffer);
+// Prints the provided character.
+int printchar(char c);
+// Prints the provided integer.
+int printint(int i);
+// Prints the provided integer with a newline at the end.
+int printintln(int i);
+// Prints the provided buffer with a newline at the end.
+int println(const char* buffer);
+// Supports: `%d`, `%p`, `%x`, `%s`.
+#define printf(template, ...) __printf(template, (const void*[]) { __VA_ARGS__ })
+void __printf(const char* template, const void* args[]);
 
 #endif  /* __LIBC_H__ */
