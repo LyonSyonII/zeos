@@ -236,3 +236,52 @@ int sys_get_stats(int pid, struct stats *st)
   }
   return -ESRCH; /*ESRCH */
 }
+
+
+
+
+// empty
+
+int sys_gotoxy() {
+  return 0;
+}
+
+int sys_changecolour() {
+  return 0;
+}
+
+int sys_clrscr() {
+  return 0;
+}
+
+int sys_getkey() {
+  return 0;
+}
+
+int sys_semcreate() {
+  return 0;
+}
+
+int sys_semwait() {
+  return 0;
+}
+
+int sys_semsignal() {
+  return 0;
+}
+
+int sys_semdestroy() {
+  return 0;
+}
+
+int sys_threadcreatewithstack() {
+  return 0;
+}
+
+int sys_memregget() {
+  return 0;
+}
+
+int sys_memregdel() {
+  return 0;
+}
