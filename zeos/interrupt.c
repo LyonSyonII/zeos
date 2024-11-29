@@ -134,6 +134,5 @@ void setIdt()
 // custom
 
 int getseconds() {
-  // 18 ticks = 1s
-  return zeos_ticks / 18;
+  return zeos_ticks / TICKS_PER_SECOND;
 }

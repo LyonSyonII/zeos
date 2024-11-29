@@ -36,12 +36,16 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
   print_queue(kbuf);
   
   int prevtime = -1;
+
+  // player: 2
+  // enemy: 8
+  
   while(1) {
     int time = gettime();
     if (time == prevtime) continue;
     prevtime = time;
 
     // int seconds = memRegDel("a");
-    printf("ticks: %d;\n", &time);
+    // printf("ticks: %d;\n", &time);
   }
 }
