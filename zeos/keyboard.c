@@ -13,10 +13,16 @@ void init_keyboard() {
 
 void keyboard_unblock_first() {
     if (list_empty(&keyboard_blocked)) return;
-    
+
     struct list_head *lh = list_first(&keyboard_blocked);
     struct task_struct *ts = list_entry(lh, struct task_struct, list);
-    update_process_state_rr(ts, &readyqueue);
+
+    // Ens assegurem que el proces desbloquejat s'executa immediatament
+    ts->state = ST_RUN;
+    list_del(&ts->list);
+    list_add(&ts->list, &readyqueue);
+    sched_next_rr();
+    // update_process_state_rr(ts, &readyqueue);
 }
 
 

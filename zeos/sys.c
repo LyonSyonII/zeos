@@ -258,15 +258,27 @@ int sys_clrscr() {
 }
 
 int sys_getkey(char* b, int timeout) {
+  if (!access_ok(VERIFY_WRITE, b, sizeof(char))) return -EFAULT;
+
+  // EN PRINCIPI ARREGLAT AMB EXECUTAR IMMEDIATAMENT
+  // proces 1 : bloquejat
+  // cliquem tecla
+  // desbloquejem proces 1
+  // continuem a proces 2
+  // proces 2 : entra a getkey
+  // es menja la tecla
+  // proces 1 : desbloquejat pero no te tecla i retornara erroniament un -1
+
   if (kbuf_pop(&kbuf, b)) return 0;
   
+  // ordenar llista per timeout (ens deixa com ho tenim pero no li mola)
   current()->p_stats.blocked_ticks = timeout*TICKS_PER_SECOND;
   update_process_state_rr(current(), &keyboard_blocked);
   sched_next_rr();
   
   if (kbuf_pop(&kbuf, b)) return 0;
 
-  return -1;
+  return -ETIME;
 }
 
 int sys_semcreate() {
