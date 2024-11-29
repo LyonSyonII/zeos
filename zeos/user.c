@@ -41,16 +41,23 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
 
   
   int prevtime = -1;
+
+  int x = 100, y = 0;
   while(1) {
     // int time = gettime();
     // if (time == prevtime) continue;
     // prevtime = time;
 
     char tecla;
-    if (getKey(&tecla, 10) >= 0) {
+    if (getKey(&tecla, 3) >= 0) {
       printchar(tecla);
     } else {
       printchar('.');
+      gotoXY(x, y++);
+      if (y >= 25) {
+        y = 0;
+        ++x;
+      }
     }
 
     // int seconds = memRegDel("a");

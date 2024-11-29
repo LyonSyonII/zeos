@@ -245,7 +245,16 @@ int sys_get_stats(int pid, struct stats *st)
 
 // empty
 
-int sys_gotoxy() {
+// Si estem fora del rang en alguna coordenada canviarem el valor a la coordenada valida més proxima
+int sys_gotoxy(int x, int y) {
+  if (x >= NUM_COLUMNS) x = NUM_COLUMNS - 1;
+  else if (x < 0) x = 0;
+
+  if (y >= NUM_ROWS) y = NUM_ROWS - 1;
+  else if (y < 0) y = 0;
+
+  setCursor(x, y);
+
   return 0;
 }
 

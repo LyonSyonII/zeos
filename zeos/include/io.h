@@ -11,11 +11,15 @@
 /** Screen functions **/
 /**********************/
 
+#define NUM_COLUMNS 80
+#define NUM_ROWS    25
+
 Byte inb (unsigned short port);
 void printc(char c);
 void printc_xy(Byte x, Byte y, char c);
 void printk(char *string);
 
+void setCursor(int nx, int ny);
 
 void printkint(int i);
 void printkintln(int i);

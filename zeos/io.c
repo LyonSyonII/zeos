@@ -10,8 +10,6 @@
 /** Screen  ***/
 /**************/
 
-#define NUM_COLUMNS 80
-#define NUM_ROWS    25
 
 Byte x, y=19;
 
@@ -198,4 +196,10 @@ void dbg_task(struct task_struct* task) {
     // task->parent,
     // task->parent ? &task->parent->PID : &err
   );
+}
+
+
+void setCursor(int nx, int ny) {
+  x = nx;
+  y = ny;
 }
