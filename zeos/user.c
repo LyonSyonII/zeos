@@ -47,8 +47,11 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
     // prevtime = time;
 
     char tecla;
-    getKey(&tecla, 1 << 30);
-    printchar(tecla);
+    if (getKey(&tecla, 10) >= 0) {
+      printchar(tecla);
+    } else {
+      printchar('.');
+    }
 
     // int seconds = memRegDel("a");
     // printf("ticks: %d;\n", &time);
