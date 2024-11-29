@@ -17,6 +17,7 @@
 
 #include <errno.h>
 #include <keyboard.h>
+#include <interrupt.h>
 
 
 #define LECTURA 0

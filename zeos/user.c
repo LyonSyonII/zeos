@@ -21,29 +21,34 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
 
   keyboard_buffer kbuf = KBUF_NEW(4);
 
-  kbuf_push(&kbuf, '1');
-  print_queue(kbuf);
-  kbuf_push(&kbuf, '2');
-  print_queue(kbuf);
-  kbuf_push(&kbuf, '3');
-  print_queue(kbuf);
-  kbuf_push(&kbuf, '4');
-  print_queue(kbuf);
-  kbuf_push(&kbuf, '5');
-  print_queue(kbuf);
-  kbuf_push(&kbuf, '6');
+  // kbuf_push(&kbuf, '1');
+  // print_queue(kbuf);
+  // kbuf_push(&kbuf, '2');
+  // print_queue(kbuf);
+  // kbuf_push(&kbuf, '3');
+  // print_queue(kbuf);
+  // kbuf_push(&kbuf, '4');
+  // print_queue(kbuf);
+  // kbuf_push(&kbuf, '5');
+  // print_queue(kbuf);
+  // kbuf_push(&kbuf, '6');
+  // 
+  // print_queue(kbuf);
   
-  print_queue(kbuf);
-  
-  int prevtime = -1;
 
   // player: 2
   // enemy: 8
+
   
+  int prevtime = -1;
   while(1) {
-    int time = gettime();
-    if (time == prevtime) continue;
-    prevtime = time;
+    // int time = gettime();
+    // if (time == prevtime) continue;
+    // prevtime = time;
+
+    char tecla;
+    getKey(&tecla, 1 << 30);
+    printchar(tecla);
 
     // int seconds = memRegDel("a");
     // printf("ticks: %d;\n", &time);

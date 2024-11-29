@@ -1,3 +1,6 @@
+#ifndef _LINUX_QUEUE_H
+#define _LINUX_QUEUE_H
+
 #include "types.h"
 
 typedef struct {
@@ -12,19 +15,19 @@ typedef struct {
 
 keyboard_buffer __kbuf_new(char *buffer, const int length);
 
-int kbuf_push(keyboard_buffer *kbuf, int item);
+int kbuf_push(keyboard_buffer *kbuf, char item);
 
-int kbuf_pop(keyboard_buffer *kbuf, int *value);
+int kbuf_pop(keyboard_buffer *kbuf, char *value);
 
 #define KBUF_ITER(kbuf, value) \
     char __buf__[kbuf.len]; \
     for (int i = 0; i < kbuf.len; i++) __buf__[i] = kbuf.buf[i]; \
     kbuf.buf = __buf__; \
-    int value; \
+    char value; \
     while (kbuf_pop(&kbuf, &value))
 
 #define KBUF_ITER_CONSUME(kbuf) \
-    int value; \
+    char value; \
     while (kbuf_pop(&kbuf, &value))
 
 
@@ -79,3 +82,5 @@ int __queue_pop(void* q, void* out, int size);
 int __queue_pop_back(void* q, void* out, int size);
 int __queue_is_empty(void* q);
 int __queue_is_full(void* q);
+
+#endif /* _LINUX_QUEUE_H */
