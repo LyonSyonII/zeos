@@ -6,7 +6,7 @@
 #include <segment.h>
 #include <hardware.h>
 #include <io.h>
-
+#include <keyboard.h>
 #include <sched.h>
 
 #include <zeos_interrupt.h>
@@ -37,7 +37,8 @@ void clock_routine()
 {
   zeos_show_clock();
   zeos_ticks ++;
-  
+
+  keyboard_update_blocked();  
   schedule();
 }
 

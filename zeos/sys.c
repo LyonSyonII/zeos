@@ -259,9 +259,10 @@ int sys_clrscr() {
 int sys_getkey(char* b, int timeout) {
   if (kbuf_pop(&kbuf, b)) return 0;
   
+  current()->p_stats.blocked_ticks = timeout*TICKS_PER_SECOND;
   update_process_state_rr(current(), &keyboard_blocked);
   sched_next_rr();
-
+  
   if (kbuf_pop(&kbuf, b)) return 0;
 
   return -1;

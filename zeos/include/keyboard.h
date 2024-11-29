@@ -1,6 +1,8 @@
 #ifndef __KEYBOARD_H__
 #define __KEYBOARD_H__
 
+#include <queue.h>
+
 extern keyboard_buffer kbuf;
 
 extern struct list_head keyboard_blocked;
