@@ -17,4 +17,8 @@ void setTrapHandler(int vector, void (*handler)(), int maxAccessibleFromPL);
 
 void setIdt();
 
+// custom
+
+int getseconds();
+
 #endif  /* __INTERRUPT_H__ */

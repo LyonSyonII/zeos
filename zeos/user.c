@@ -35,5 +35,13 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
   
   print_queue(kbuf);
   
-  while(1) { }
+  int prevtime = -1;
+  while(1) {
+    int time = gettime();
+    if (time == prevtime) continue;
+    prevtime = time;
+
+    // int seconds = memRegDel("a");
+    printf("ticks: %d;\n", &time);
+  }
 }
