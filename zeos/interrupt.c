@@ -129,3 +129,10 @@ void setIdt()
   set_idt_reg(&idtR);
 }
 
+
+// custom
+
+int getseconds() {
+  // 18 ticks = 1s
+  return zeos_ticks / 18;
+}
