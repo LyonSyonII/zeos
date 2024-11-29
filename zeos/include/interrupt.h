@@ -8,6 +8,8 @@
 #include <types.h>
 
 #define IDT_ENTRIES 256
+// 18 ticks = 1s
+#define TICKS_PER_SECOND 18 
 
 extern Gate idt[IDT_ENTRIES];
 extern Register idtR;
