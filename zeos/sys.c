@@ -16,6 +16,8 @@
 #include <p_stats.h>
 
 #include <errno.h>
+#include <keyboard.h>
+
 
 #define LECTURA 0
 #define ESCRIPTURA 1
@@ -254,8 +256,15 @@ int sys_clrscr() {
   return 0;
 }
 
-int sys_getkey() {
-  return 0;
+int sys_getkey(char* b, int timeout) {
+  if (kbuf_pop(&kbuf, b)) return 0;
+  
+  update_process_state_rr(current(), &keyboard_blocked);
+  sched_next_rr();
+
+  if (kbuf_pop(&kbuf, b)) return 0;
+
+  return -1;
 }
 
 int sys_semcreate() {
