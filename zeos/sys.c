@@ -1,6 +1,7 @@
 /*
  * sys.c - Syscalls implementation
  */
+#include "types.h"
 #include <devices.h>
 
 #include <utils.h>
@@ -258,11 +259,70 @@ int sys_gotoxy(int x, int y) {
   return 0;
 }
 
-int sys_changecolour() {
+//No se si fer-ho que transformi rgb al que tenim?
+int sys_changecolour(int fg, int bg) {
+  screenColor = (bg&0x0F)<<4 | (fg&0x0F);
   return 0;
 }
 
-int sys_clrscr() {
+int sys_clrscr(char *b) {
+  //int inc;
+  //printkint((int)get_ebp() - (int)current());
+  //Word emptyChar = 0x0000;
+  //Word newScreen[25][80];
+  setCursor(0, 0);
+  int act = 0;
+  if (access_ok(VERIFY_READ, b, NUM_ROWS*NUM_COLUMNS*sizeof(Word))) { // si el punter es valid
+    //copy_from_user(b, newScreen, NUM_COLUMNS*NUM_ROWS*sizeof(Word));
+    //inc = 2;
+    int sizeRow = NUM_COLUMNS*sizeof(Word);
+    for (int i = 0; i < NUM_ROWS; ++i) {
+      char row[sizeRow];
+      copy_from_user(&b[sizeRow*i], row, sizeRow);
+      for (int j = 0; j < sizeRow; j += sizeof(Word)) {
+        printc_colour(row[j], row[j + 1]);
+      }
+    }
+  } else { // si no default pantalla buida
+    for (int i = 0; i < NUM_ROWS; ++i) {
+      for (int j = 0; j < NUM_COLUMNS; ++j) {
+        printc_colour(0, 0);
+      }
+    }
+    /*//inc = 0;
+    for (int i = 0; i < 25; ++i) {
+      for (int j = 0; j < 80; ++j) {
+        newScreen[i][j] = 0x0000;
+      }
+    }*/
+  }
+
+  //int act = 0;
+/*  setCursor(0, 0);
+  
+  // implementacions varies
+
+
+  for (int i = 0; i < 25; ++i) { 
+    for (int j = 0; j < 80; ++j) {
+      printc_color((Byte)(newScreen[i][j]&0xFF), (Byte)(newScreen[i][j]>>8&0xFF));
+    }
+  }
+  */
+  //for (int act = 0; act < NUM_COLUMNS*NUM_ROWS; ++act) printc_color((Byte)newScreen[act]&0xFF, (Byte)((newScreen[act]>>8))&0xFF);
+/*
+  for (int act = 0; act < NUM_COLUMNS*NUM_ROWS*sizeof(Word); act += sizeof(Word)) {
+    printc_color(b[act], b[act + 1]);
+  }
+
+  for (int i = 0; i < 25; ++i) {
+    for (int j = 0; j < 80; ++j) {
+      printc_color(b[act], b[act + 1]);
+      act += inc;
+    }
+  }*/
+
+
   return 0;
 }
 

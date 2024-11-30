@@ -19,6 +19,9 @@ void printc(char c);
 void printc_xy(Byte x, Byte y, char c);
 void printk(char *string);
 
+Byte screenColor; // Color amb el que pintar nous caracters
+void printc_colour(char c, Byte colour); // Pinta el caracter c amb el color que li passis (no modifica screenColor)
+
 void setCursor(int nx, int ny);
 
 void printkint(int i);

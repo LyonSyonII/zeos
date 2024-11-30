@@ -13,6 +13,8 @@
 
 Byte x, y=19;
 
+Byte screenColor = 0x02; 
+
 /* Read a byte from 'port' */
 Byte inb (unsigned short port)
 {
@@ -32,7 +34,7 @@ void printc(char c)
   }
   else
   {
-    Word ch = (Word) (c & 0x00FF) | 0x0200;
+    Word ch = (Word) (c & 0x00FF) | (screenColor<<8);
 	Word *screen = (Word *)0xb8000;
 	screen[(y * NUM_COLUMNS + x)] = ch;
     if (++x >= NUM_COLUMNS)
@@ -202,4 +204,19 @@ void dbg_task(struct task_struct* task) {
 void setCursor(int nx, int ny) {
   x = nx;
   y = ny;
+}
+
+
+void printc_colour(char c, Byte color) {
+  Byte aux = screenColor;
+  screenColor = color;
+  printc(c);
+  screenColor = aux;
+  /*Word ch = (Word) (c & 0x00FF) | (color<<8);
+	Word *screen = (Word *)0xb8000;
+	screen[(y * NUM_COLUMNS + x)] = ch;
+  if (++x >= NUM_COLUMNS) {
+      x = 0;
+      y=(y+1)%NUM_ROWS;
+    }*/
 }
