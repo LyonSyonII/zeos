@@ -24,7 +24,7 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
 
   // test_keyboard(0);
   // test_screen(0);
-  test_threads(3);
+  test_threads(2);
   // test_fork(4);
 
   println("Finished tests!");
@@ -113,7 +113,7 @@ void test_threads_function(void* argument) {
   while (1);
 }
 void test_threads(int times) {
-  int created_threads = 0;
+  int created_threads = 5;
   
   int ret = threadCreateWithStack(test_threads_function, 1, (void*)(long)created_threads);
   if (ret < 0) {
@@ -122,14 +122,6 @@ void test_threads(int times) {
   }
   printf("Created thread #%d\n\n", &created_threads);
   
-  created_threads += 1;
-  ret = threadCreateWithStack(test_threads_function, 1, (void*)(long)created_threads);
-  if (ret < 0) {
-    print("[test_thread] Could not spawn thread: "); perror();
-    exit(1);
-  }
-  printf("Created thread #%d\n\n", &created_threads);
-
   created_threads += 1;
   ret = threadCreateWithStack(test_threads_function, 1, (void*)(long)created_threads);
   if (ret < 0) {

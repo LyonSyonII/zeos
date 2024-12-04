@@ -370,6 +370,7 @@ int sys_semdestroy() {
 }
 
 int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* parameter, void* wrapper) {
+  struct task_struct* parent = current();
   struct list_head *lhcurrent = NULL;
   union task_union *uchild;
   
@@ -388,43 +389,85 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   /* new pages dir */
   // allocate_DIR((struct task_struct*)uchild);
   
-
-  int new_ph_pag, pag, i;
+  
   page_table_entry *process_PT = get_PT(&uchild->task);
-  // ALLOCATE STACK
-  new_ph_pag = alloc_frame();
-  if (new_ph_pag <= 0) return -ENOMEM;
+  page_table_entry *parent_PT = get_PT(parent);
+  
+  
+  int stack_page = PAG_LOG_INIT_DATA+NUM_PAG_DATA+1;
+  printkf("[KERNEL] parent: 0x%p; new: 0x%p\n", parent, &uchild->stack);
+  printkf("[KERNEL] Searching page from %d\n", &stack_page);
+  int found = 0;
+  while (found < N && stack_page < TOTAL_PAGES-1) {
+    if (parent_PT[stack_page].entry == 0) found += 1;
+    else found = 0;
+    stack_page += 1;
+  }
+  // no available consecutive pages, abort
+  if (found < N) return -ENOMEM;
 
-  int stack_page = PAG_LOG_INIT_DATA+NUM_PAG_DATA+global_TID;
-  set_ss_pag(process_PT, stack_page, new_ph_pag);
+  printkf("[KERNEL] Found pages until %d\n", &stack_page);
+  // set pag to start of region
+  stack_page -= N;
+  printkf("[KERNEL] New pages start %d\n", &stack_page);
+  
+  // region found, alloc pages
+  for (int i = 0; i < N; i++) {
+    int frame = alloc_frame();
+    if (frame > 0) {
+      int page = stack_page+i;
+      printkf("[KERNEL] Assigned page %d to frame %d\n", &page, &frame);
+      set_ss_pag(parent_PT, stack_page+i, frame);
+      continue;
+    }
+    
+    // not enough physical pages, abort
+    while (i > 0) {
+      i += 1;
+      free_frame(get_frame(parent_PT, stack_page+i));
+      del_ss_pag(parent_PT, stack_page+i);
+    }
+    set_cr3(get_DIR(parent));
+    return -ENOMEM;
+  }
   
   // set_cr3(get_DIR(current()));
+  
+  printkf("End of data section %d; stack_page: %p;\n", (int*)(stack_page<<12), (int*)(stack_page<<12));
 
   uchild->task.TID=++global_TID;
   uchild->task.state=ST_READY;
-
-  int register_ebp;		/* frame pointer */
-  /* Map Parent's ebp to child's stack */
-  register_ebp = stack_page << 12;
-  register_ebp=(register_ebp - (int)current()) + (int)(uchild);
-
-  uchild->task.register_esp=register_ebp + sizeof(DWord);
-
-  DWord temp_ebp=*(DWord*)register_ebp;
+  
+  int register_ebp = ((stack_page+1) << 12) - sizeof(DWord);
+  // register_ebp=(register_ebp - (int)current()) + (int)(uchild);
+  printkf("register_ebp: %p; value: %d\n", (int*)register_ebp);
+  
+  uchild->task.register_esp=register_ebp - sizeof(DWord)*3;
+  DWord* stack = (unsigned long*)(long)uchild->task.register_esp;
+  stack[0] = 0;
+  stack[1] = (DWord)function;
+  stack[2] = (DWord)parameter;
+  
+  // DWord temp_ebp=*(DWord*)register_ebp;
   /* Prepare child stack for context switch */
-    uchild->task.register_esp-=sizeof(DWord);
-  *(DWord*)(uchild->task.register_esp)=(DWord)parameter;
-  uchild->task.register_esp-=sizeof(DWord);
-  *(DWord*)(uchild->task.register_esp)=(DWord)function;
-  uchild->task.register_esp-=sizeof(DWord);
-  *(DWord*)(uchild->task.register_esp)=temp_ebp;
+   // uchild->task.register_esp-=sizeof(DWord);
+  // *(DWord*)(uchild->task.register_esp)=(DWord)parameter;
+  // uchild->task.register_esp-=sizeof(DWord);
+  // *(DWord*)(uchild->task.register_esp)=(DWord)function;
+  // uchild->task.register_esp-=sizeof(DWord);
+  // *(DWord*)(uchild->task.register_esp)=0;
 
   /* Set stats to 0 */
   init_stats(&(uchild->task.p_stats));
 
   /* Queue child process into readyqueue */
   uchild->task.state=ST_READY;
-  list_add_tail(&(uchild->task.list), &readyqueue);
+  list_add(&(uchild->task.list), &readyqueue);
+
+  // __asm__ __volatile__("int $3"); // breakpoint
+
+  force_task_switch();
+  
   
   return 0;
 }
