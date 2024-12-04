@@ -1,3 +1,4 @@
+sudo apt update
 sudo apt install micro clangd gh -y
 sudo snap install code --classic
 code --install-extension llvm-vs-code-extensions.vscode-clangd

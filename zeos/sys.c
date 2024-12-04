@@ -1,6 +1,7 @@
 /*
  * sys.c - Syscalls implementation
  */
+#include "types.h"
 #include <devices.h>
 
 #include <utils.h>
@@ -16,6 +17,9 @@
 #include <p_stats.h>
 
 #include <errno.h>
+#include <keyboard.h>
+#include <interrupt.h>
+
 
 #define LECTURA 0
 #define ESCRIPTURA 1
@@ -242,20 +246,108 @@ int sys_get_stats(int pid, struct stats *st)
 
 // empty
 
-int sys_gotoxy() {
+// Si estem fora del rang en alguna coordenada canviarem el valor a la coordenada valida més proxima
+int sys_gotoxy(int x, int y) {
+  if (x >= NUM_COLUMNS) x = NUM_COLUMNS - 1;
+  else if (x < 0) x = 0;
+
+  if (y >= NUM_ROWS) y = NUM_ROWS - 1;
+  else if (y < 0) y = 0;
+
+  setCursor(x, y);
+
   return 0;
 }
 
-int sys_changecolour() {
+//No se si fer-ho que transformi rgb al que tenim?
+int sys_changecolour(int fg, int bg) {
+  screenColor = (bg&0x0F)<<4 | (fg&0x0F);
   return 0;
 }
 
-int sys_clrscr() {
+int sys_clrscr(char *b) {
+  //int inc;
+  //printkint((int)get_ebp() - (int)current());
+  //Word emptyChar = 0x0000;
+  //Word newScreen[25][80];
+  setCursor(0, 0);
+  int act = 0;
+  if (access_ok(VERIFY_READ, b, NUM_ROWS*NUM_COLUMNS*sizeof(Word))) { // si el punter es valid
+    //copy_from_user(b, newScreen, NUM_COLUMNS*NUM_ROWS*sizeof(Word));
+    //inc = 2;
+    int sizeRow = NUM_COLUMNS*sizeof(Word);
+    for (int i = 0; i < NUM_ROWS; ++i) {
+      char row[sizeRow];
+      copy_from_user(&b[sizeRow*i], row, sizeRow);
+      for (int j = 0; j < sizeRow; j += sizeof(Word)) {
+        printc_colour(row[j], row[j + 1]);
+      }
+    }
+  } else { // si no default pantalla buida
+    for (int i = 0; i < NUM_ROWS; ++i) {
+      for (int j = 0; j < NUM_COLUMNS; ++j) {
+        printc_colour(0, 0);
+      }
+    }
+    /*//inc = 0;
+    for (int i = 0; i < 25; ++i) {
+      for (int j = 0; j < 80; ++j) {
+        newScreen[i][j] = 0x0000;
+      }
+    }*/
+  }
+
+  //int act = 0;
+/*  setCursor(0, 0);
+  
+  // implementacions varies
+
+
+  for (int i = 0; i < 25; ++i) { 
+    for (int j = 0; j < 80; ++j) {
+      printc_color((Byte)(newScreen[i][j]&0xFF), (Byte)(newScreen[i][j]>>8&0xFF));
+    }
+  }
+  */
+  //for (int act = 0; act < NUM_COLUMNS*NUM_ROWS; ++act) printc_color((Byte)newScreen[act]&0xFF, (Byte)((newScreen[act]>>8))&0xFF);
+/*
+  for (int act = 0; act < NUM_COLUMNS*NUM_ROWS*sizeof(Word); act += sizeof(Word)) {
+    printc_color(b[act], b[act + 1]);
+  }
+
+  for (int i = 0; i < 25; ++i) {
+    for (int j = 0; j < 80; ++j) {
+      printc_color(b[act], b[act + 1]);
+      act += inc;
+    }
+  }*/
+
+
   return 0;
 }
 
-int sys_getkey() {
-  return 0;
+int sys_getkey(char* b, int timeout) {
+  if (!access_ok(VERIFY_WRITE, b, sizeof(char))) return -EFAULT;
+
+  // EN PRINCIPI ARREGLAT AMB EXECUTAR IMMEDIATAMENT
+  // proces 1 : bloquejat
+  // cliquem tecla
+  // desbloquejem proces 1
+  // continuem a proces 2
+  // proces 2 : entra a getkey
+  // es menja la tecla
+  // proces 1 : desbloquejat pero no te tecla i retornara erroniament un -1
+
+  if (kbuf_pop(&kbuf, b)) return 0;
+  
+  // ordenar llista per timeout (ens deixa com ho tenim pero no li mola)
+  current()->p_stats.blocked_ticks = timeout*TICKS_PER_SECOND;
+  update_process_state_rr(current(), &keyboard_blocked);
+  sched_next_rr();
+  
+  if (kbuf_pop(&kbuf, b)) return 0;
+
+  return -ETIME;
 }
 
 int sys_semcreate() {

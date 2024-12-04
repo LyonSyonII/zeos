@@ -6,7 +6,7 @@
 #include <segment.h>
 #include <hardware.h>
 #include <io.h>
-
+#include <keyboard.h>
 #include <sched.h>
 
 #include <zeos_interrupt.h>
@@ -17,11 +17,11 @@ Register    idtR;
 char char_map[] =
 {
   '\0','\0','1','2','3','4','5','6',
-  '7','8','9','0','\'','¡','\0','\0',
+  '7','8','9','0','\'','ï¿½','\0','\0',
   'q','w','e','r','t','y','u','i',
   'o','p','`','+','\0','\0','a','s',
-  'd','f','g','h','j','k','l','ñ',
-  '\0','º','\0','ç','z','x','c','v',
+  'd','f','g','h','j','k','l','ï¿½',
+  '\0','ï¿½','\0','ï¿½','z','x','c','v',
   'b','n','m',',','.','-','\0','*',
   '\0','\0','\0','\0','\0','\0','\0','\0',
   '\0','\0','\0','\0','\0','\0','\0','7',
@@ -37,15 +37,23 @@ void clock_routine()
 {
   zeos_show_clock();
   zeos_ticks ++;
-  
+
+  keyboard_update_blocked();  
   schedule();
 }
 
+
+//Haurem de desbloquejat el proces que estigui bloquejat per getKey()
 void keyboard_routine()
 {
-  unsigned char c = inb(0x60);
-  
-  if (c&0x80) printc_xy(0, 0, char_map[c&0x7f]);
+  unsigned char event = inb(0x60);
+
+  if (event&0x80) {
+    Byte c = char_map[event&0x7F];
+    kbuf_push(&kbuf, c);
+    keyboard_unblock_first();
+    printc_xy(0, 0, c); // de moment ho deixem
+  }
 }
 
 void setInterruptHandler(int vector, void (*handler)(), int maxAccessibleFromPL)
@@ -122,3 +130,9 @@ void setIdt()
   set_idt_reg(&idtR);
 }
 
+
+// custom
+
+int getseconds() {
+  return zeos_ticks / TICKS_PER_SECOND;
+}
