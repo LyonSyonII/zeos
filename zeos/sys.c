@@ -438,7 +438,7 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   uchild->task.TID=++global_TID;
   uchild->task.state=ST_READY;
   
-  int register_ebp = ((stack_page+1) << 12) - sizeof(DWord);
+/*   int register_ebp = ((stack_page+1) << 12) - sizeof(DWord);
   // register_ebp=(register_ebp - (int)current()) + (int)(uchild);
   printkf("register_ebp: %p; value: %d\n", (int*)register_ebp);
   
@@ -446,7 +446,19 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   DWord* stack = (unsigned long*)(long)uchild->task.register_esp;
   stack[0] = 0;
   stack[1] = (DWord)function;
-  stack[2] = (DWord)parameter;
+  stack[2] = (DWord)parameter; */
+      // preparar la pila
+    int base_addr = (stack_page+1)<<12;
+    
+    // paso 1) pila de sistema 
+    uchild->stack[KERNEL_STACK_SIZE-5] = (unsigned long)wrapper; // eip
+    uchild->stack[KERNEL_STACK_SIZE-2] = base_addr - 2*sizeof(void *); // esp
+    int stack_offset = 18;
+    uchild->task.register_esp = (unsigned long int)&uchild->stack[KERNEL_STACK_SIZE-stack_offset];
+    
+    // paso 2) pila de usuario (pinta travieso, es para el threadCallWrapper)
+    *(void **)(base_addr - sizeof(void *)) = parameter;
+    *(void **)(base_addr - 2*sizeof(void *)) = function;
   
   // DWord temp_ebp=*(DWord*)register_ebp;
   /* Prepare child stack for context switch */
