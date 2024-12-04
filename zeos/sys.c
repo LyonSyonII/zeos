@@ -67,7 +67,7 @@ int sys_fork(void)
   
   /* Any free task_struct? */
   if (list_empty(&freequeue)) return -ENOMEM;
-
+  
   lhcurrent=list_first(&freequeue);
   
   list_del(lhcurrent);
@@ -117,15 +117,17 @@ int sys_fork(void)
     set_ss_pag(process_PT, PAG_LOG_INIT_CODE+pag, get_frame(parent_PT, PAG_LOG_INIT_CODE+pag));
   }
   /* Copy parent's DATA to child. We will use TOTAL_PAGES-1 as a temp logical page to map to */
+  unsigned int temp_logical = TOTAL_PAGES-1;
   for (pag=NUM_PAG_KERNEL+NUM_PAG_CODE; pag<NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA; pag++)
   {
     /* Map one child page to parent's address space. */
-    set_ss_pag(parent_PT, pag+NUM_PAG_DATA, get_frame(process_PT, pag));
-    copy_data((void*)(pag<<12), (void*)((pag+NUM_PAG_DATA)<<12), PAGE_SIZE);
-    del_ss_pag(parent_PT, pag+NUM_PAG_DATA);
+    set_ss_pag(parent_PT, temp_logical, get_frame(process_PT, pag));
+    copy_data((void*)(pag<<12), (void*)((temp_logical)<<12), PAGE_SIZE);
+    del_ss_pag(parent_PT, temp_logical);
+    /* Deny access to the child's memory space */
+    set_cr3(get_DIR(current()));
   }
-  /* Deny access to the child's memory space */
-  set_cr3(get_DIR(current()));
+  // set_cr3(get_DIR(current()));
 
   uchild->task.PID=++global_PID;
   uchild->task.state=ST_READY;
@@ -366,11 +368,35 @@ int sys_semdestroy() {
   return 0;
 }
 
-int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* parameter) {
+// TODO: Add userspace wrapper to syscall entry
+int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* parameter, void* wrapper) {
+  // return function must exist
+  if (function == NULL) return -EINVAL;
+  // thread must have at least one stack page
+  if (N <= 0) return -EINVAL;
+  // abort if no task struct available
+  if (list_empty(&freequeue)) return -ENOMEM;
+  
+  struct task_struct* parent = current();
+  
+  // get task struct from the freequeue
+  struct list_head* new_lh = list_first(&freequeue);
+  list_del(new_lh);
+  union task_union* new_tu = (union task_union*)list_head_to_task_struct(new_lh);
+
+  // copy whole stack from parent
+  copy_data(parent, new_tu, sizeof(union task_union));
+  
+  // new thread shares directory with parent
+  // DATA, SYSTEM and CODE pages are shared
+  new_tu->task.dir_pages_baseAddr = parent->dir_pages_baseAddr;
+  
+  // search Page Table for N consecutive pages
+  int pag = PAG_LOG_INIT_DATA+NUM_PAG_DATA;
+  
   
   return 0;
 }
-
 int sys_memregget() {
   return 0;
 }
