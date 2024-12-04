@@ -54,6 +54,7 @@ int sys_getpid()
 }
 
 int global_PID=1000;
+int global_TID=1;
 
 int ret_from_fork()
 {
@@ -128,7 +129,7 @@ int sys_fork(void)
     set_cr3(get_DIR(current()));
   }
   // set_cr3(get_DIR(current()));
-
+  
   uchild->task.PID=++global_PID;
   uchild->task.state=ST_READY;
 
@@ -368,8 +369,64 @@ int sys_semdestroy() {
   return 0;
 }
 
-// TODO: Add userspace wrapper to syscall entry
 int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* parameter, void* wrapper) {
+  struct list_head *lhcurrent = NULL;
+  union task_union *uchild;
+  
+  /* Any free task_struct? */
+  if (list_empty(&freequeue)) return -ENOMEM;
+  
+  lhcurrent=list_first(&freequeue);
+  
+  list_del(lhcurrent);
+  
+  uchild=(union task_union*)list_head_to_task_struct(lhcurrent);
+  
+  /* Copy the parent's task struct to child's */
+  copy_data(current(), uchild, sizeof(union task_union));
+  
+  /* new pages dir */
+  // allocate_DIR((struct task_struct*)uchild);
+  
+
+  int new_ph_pag, pag, i;
+  page_table_entry *process_PT = get_PT(&uchild->task);
+  // ALLOCATE STACK
+  new_ph_pag = alloc_frame();
+  if (new_ph_pag <= 0) return -ENOMEM;
+  set_ss_pag(process_PT, PAG_LOG_INIT_DATA+NUM_PAG_DATA, new_ph_pag);
+  
+  // set_cr3(get_DIR(current()));
+
+  uchild->task.TID=++global_TID;
+  uchild->task.state=ST_READY;
+
+  int register_ebp;		/* frame pointer */
+  /* Map Parent's ebp to child's stack */
+  register_ebp = (int) get_ebp();
+  register_ebp=(register_ebp - (int)current()) + (int)(uchild);
+
+  uchild->task.register_esp=register_ebp + sizeof(DWord);
+
+  DWord temp_ebp=*(DWord*)register_ebp;
+  /* Prepare child stack for context switch */
+  uchild->task.register_esp-=sizeof(DWord);
+  *(DWord*)(uchild->task.register_esp)=(DWord)function;
+  uchild->task.register_esp-=sizeof(DWord);
+  *(DWord*)(uchild->task.register_esp)=temp_ebp;
+
+  /* Set stats to 0 */
+  init_stats(&(uchild->task.p_stats));
+
+  /* Queue child process into readyqueue */
+  uchild->task.state=ST_READY;
+  list_add_tail(&(uchild->task.list), &readyqueue);
+  
+  return 0;
+}
+
+
+int sys_threadcreatewithstackk(void (*function)(void* arg), int N, void* parameter, void* wrapper) {
   // return function must exist
   if (function == NULL) return -EINVAL;
   // thread must have at least one stack page
@@ -378,25 +435,88 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   if (list_empty(&freequeue)) return -ENOMEM;
   
   struct task_struct* parent = current();
-  
+
   // get task struct from the freequeue
   struct list_head* new_lh = list_first(&freequeue);
   list_del(new_lh);
   union task_union* new_tu = (union task_union*)list_head_to_task_struct(new_lh);
-
+  
   // copy whole stack from parent
   copy_data(parent, new_tu, sizeof(union task_union));
   
+  // search Page Table for N consecutive pages
+  // (TOTAL_PAGES-1) is reserved by sys_fork
+  page_table_entry* PT = get_PT(parent);
+  int pag = PAG_LOG_INIT_DATA+NUM_PAG_DATA;
+  printkf("[KERNEL] parent: 0x%p; new: 0x%p\n", parent, &new_tu->stack);
+  printkf("[KERNEL] Searching page from %d\n", &pag);
+  int found = 0;
+  while (found < N && pag < TOTAL_PAGES-1) {
+    if (PT[pag].entry == 0) found += 1;
+    else found = 0;
+    pag += 1;
+  }
+  // no available consecutive pages, abort
+  if (found < N) return -ENOMEM;
+  printkf("[KERNEL] Found pages until %d\n", &pag);
+  // set pag to start of region
+  pag -= N;
+  printkf("[KERNEL] New pages start %d\n", &pag);
+
+  // region found, alloc pages
+  for (int i = 0; i < N; i++) {
+    int frame = alloc_frame();
+    if (frame > 0) {
+      int page = pag+i;
+      printkf("[KERNEL] Assigned page %d to frame %d\n", &page, &frame);
+      set_ss_pag(PT, pag+i, frame);
+      continue;
+    }
+    
+    // not enough physical pages, abort
+    while (i > 0) {
+      i -= 1;
+      free_frame(get_frame(PT, pag+i));
+      del_ss_pag(PT, pag+i);
+    }
+    set_cr3(get_DIR(parent));
+    return -ENOMEM;
+  }
+  
   // new thread shares directory with parent
   // DATA, SYSTEM and CODE pages are shared
-  new_tu->task.dir_pages_baseAddr = parent->dir_pages_baseAddr;
+  // new_tu->task.dir_pages_baseAddr = parent->dir_pages_baseAddr;
   
-  // search Page Table for N consecutive pages
-  int pag = PAG_LOG_INIT_DATA+NUM_PAG_DATA;
+  // Initialize unique fields
+  init_stats(&new_tu->task.p_stats);
+  global_TID += 1;
+  new_tu->task.TID = global_TID;
   
+  int base_addr = (pag+1)<<12;
+  
+  new_tu->stack[KERNEL_STACK_SIZE-5] = (unsigned long)wrapper; // eip
+  new_tu->stack[KERNEL_STACK_SIZE-2] = base_addr - 2*sizeof(void *); // esp
+  new_tu->task.register_esp = (unsigned long int)&new_tu->stack[KERNEL_STACK_SIZE-18 /* stack offset */];
+  
+  unsigned long* stack = &new_tu->stack[KERNEL_STACK_SIZE];
+  void** base = (void**)(base_addr - sizeof(void*));
+  printkf("Stack: %p; Base: %p;\n", stack, base);
+  // new_tu->stack[KERNEL_STACK_SIZE] = (long) parameter;
+  // new_tu->stack[KERNEL_STACK_SIZE-1] = (long) function;
+  *(void**)(base_addr - sizeof(void*)) = parameter;
+  *(void**)(base_addr - 2*sizeof(void*)) = function;
+  
+  new_tu->task.state = ST_READY;
+  // list_add_tail(&new_tu->task.list, &readyqueue);
+  
+  printkf("[KERNEL] Forcing task switch\n");
+  list_add(&new_tu->task.list, &readyqueue);
+  force_task_switch();
   
   return 0;
 }
+
+
 int sys_memregget() {
   return 0;
 }

@@ -13,6 +13,7 @@ IMPL_QUEUE(charq, char);
 
 void test_keyboard(int block);
 void test_screen(int block);
+void test_threads(int times);
 void test_fork(int times);
 
 int __attribute__ ((__section__(".text.main"))) main(void) {
@@ -21,10 +22,13 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
   // player: 2
   // enemy: 8
 
-  test_keyboard(0);
+  // test_keyboard(0);
   // test_screen(0);
-  test_fork(2);
+  test_threads(3);
+  // test_fork(4);
 
+  println("Finished tests!");
+  
   while (1);
 }
 
@@ -49,7 +53,7 @@ void test_keyboard(int block) {
   KBUF_ITER(kbuf, value) {
     if (value != chars[i]) {
       printf("[test_keyboard] ERROR: Expected '%c', found '%c'\n", &chars[i], &value);
-      exit(1);
+      exit();
     }
     i += 1;
   }
@@ -98,8 +102,48 @@ void test_screen(int block) {
   }
 }
 
+int accessible = 93;
+void test_threads_function(void* argument) {
+  int arg = (int)(long)argument;
+  printf("[test_thread] Thread #%d spawned\n", &arg);
+  if (accessible != 93) {
+    printf("[test_thread] Thread #%d: expected global variable 93, found %d\n", &accessible);
+    exit(1);
+  }
+  while (1);
+}
+void test_threads(int times) {
+  int created_threads = 0;
+  
+  int ret = threadCreateWithStack(test_threads_function, 1, (void*)(long)created_threads);
+  if (ret < 0) {
+    print("[test_thread] Could not spawn thread: "); perror();
+    exit(1);
+  }
+  printf("Created thread #%d\n\n", &created_threads);
+  
+  created_threads += 1;
+  ret = threadCreateWithStack(test_threads_function, 1, (void*)(long)created_threads);
+  if (ret < 0) {
+    print("[test_thread] Could not spawn thread: "); perror();
+    exit(1);
+  }
+  printf("Created thread #%d\n\n", &created_threads);
+
+  created_threads += 1;
+  ret = threadCreateWithStack(test_threads_function, 1, (void*)(long)created_threads);
+  if (ret < 0) {
+    print("[test_thread] Could not spawn thread: "); perror();
+    exit(1);
+  }
+  printf("Created thread #%d\n\n", &created_threads);
+}
+
 void test_fork(int times) {
-  if (times == 0) return;
+  if (times == 0) {
+    println("[test_fork] All tests succeded!\n\n");
+    return;
+  }
   printf("[test_fork] Starting test #%d\n", &times);
 
   int forks = 0;
@@ -109,19 +153,21 @@ void test_fork(int times) {
     if (ret > 0) forks += 1;
   }
   if (ret == 0) {
+    // wait some time to allow for other processes to create
+    wait(20);
     printf("Fork %d exiting\n", &forks);
-    exit(0);
+    exit();
   }
   if (forks != 8) {
     printf("[test_fork] Expected 8 processes, found %d\n", &forks);
-    exit(1);
+    exit();
   }
   if (errno != ENOMEM) {
     printf("[test_fork] Expected errno of ENOMEM, found %d\n", &errno);
-    exit(1);
+    exit();
   }
   // wait some time to allow for other processes to exit
-  wait(10);
+  wait(40);
   printf("[test_fork] Test #%d, successful!\n\n", &times);
 
   test_fork(times-1);

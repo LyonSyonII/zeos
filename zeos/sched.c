@@ -143,6 +143,8 @@ void sched_next_rr(void)
   update_stats(&(current()->p_stats.system_ticks), &(current()->p_stats.elapsed_total_ticks));
   update_stats(&(t->p_stats.ready_ticks), &(t->p_stats.elapsed_total_ticks));
   t->p_stats.total_trans++;
+  
+  printkf("Changing from task %p to task %p\n", current(), t);
 
   task_switch((union task_union*)t);
 }

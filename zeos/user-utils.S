@@ -44,15 +44,27 @@ ENTRY(fork)
 	popl %ebp
 	ret
 
+ENTRY(threadCreateWithStackWrapper)
+	pushl 4(%esp)
+	call 4(%esp)
+	call exit // no te arguments
+
 /* int threadCreateWithStack(void (*function)(void *arg), int N, void *parameter) */
+/* int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *parameter, void* wrapper) */
 ENTRY(threadCreateWithStack)
 	pushl %ebp
 	movl %esp, %ebp
 	pushl %ebx
+	pushl %esi
+
 	movl 8(%ebp), %ebx
 	movl 12(%ebp), %ecx
+	movl 16(%ebp), %edx
+	movl $threadCreateWithStackWrapper, %esi // move wrapper address to last argument
+
 	movl $3, %eax
 	call syscall_sysenter
+	popl %esi
 	popl %ebx
 	test %eax, %eax
 	js nok	// if (eax < 0) -->
