@@ -274,7 +274,8 @@ int sys_semdestroy() {
   return 0;
 }
 
-int sys_threadcreatewithstack() {
+int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* parameter) {
+  
   return 0;
 }
 
