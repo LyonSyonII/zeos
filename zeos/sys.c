@@ -394,7 +394,7 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   page_table_entry *parent_PT = get_PT(parent);
   
   
-  int stack_page = PAG_LOG_INIT_DATA+NUM_PAG_DATA+1;
+  int stack_page = PAG_LOG_INIT_DATA+NUM_PAG_DATA+1; // +1 pq no se solapi amb l'stack del proces pare i "funcioni", un cop vagi s'ha de treure
   printkf("[KERNEL] parent: 0x%p; new: 0x%p\n", parent, &uchild->stack);
   printkf("[KERNEL] Searching page from %d\n", &stack_page);
   int found = 0;
@@ -432,9 +432,10 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   }
   
   // set_cr3(get_DIR(current()));
-  
-  int end_of_data_section = ((stack_page+1)<<12) - sizeof(DWord);
-  printkf("End of data section %d; stack_page: %p;\n", (int*)end_of_data_section, (int*)end_of_data_section);
+  {
+    int end_of_data_section = ((stack_page+1)<<12) - sizeof(DWord);
+    printkf("End of data section %d; stack_page: %p;\n", (int*)end_of_data_section, (int*)end_of_data_section);
+  }
 
   uchild->task.TID=++global_TID;
   uchild->task.state=ST_READY;
