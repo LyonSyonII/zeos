@@ -3,8 +3,9 @@
 # ZEOS - FiB UPC (2024-2025)
 
 ## Preguntes
-- sys.c:108-113 (d'on treu les adreces?)
-- sched.c:88 (task1 és fill de Idle o no te pare?)
+- al sys_fork original, hi ha un comentari que diu "Copy parent's DATA to child. We will use TOTAL_PAGES-1 as a temp logical page to map to",
+  però sembla que el codi no fa això (agafa sempre les primeres 20 pàgines després de les de DATA).
+  Si ho implementem fent cas al comentari és correcte?
 
 ## Directory Structure
 
