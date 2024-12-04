@@ -433,7 +433,8 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   
   // set_cr3(get_DIR(current()));
   
-  printkf("End of data section %d; stack_page: %p;\n", (int*)(stack_page<<12), (int*)(stack_page<<12));
+  int end_of_data_section = ((stack_page+1)<<12) - sizeof(DWord);
+  printkf("End of data section %d; stack_page: %p;\n", (int*)end_of_data_section, (int*)end_of_data_section);
 
   uchild->task.TID=++global_TID;
   uchild->task.state=ST_READY;
@@ -447,18 +448,18 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   stack[0] = 0;
   stack[1] = (DWord)function;
   stack[2] = (DWord)parameter; */
-      // preparar la pila
-    int base_addr = (stack_page+1)<<12;
-    
-    // paso 1) pila de sistema 
-    uchild->stack[KERNEL_STACK_SIZE-5] = (unsigned long)wrapper; // eip
-    uchild->stack[KERNEL_STACK_SIZE-2] = base_addr - 2*sizeof(void *); // esp
-    int stack_offset = 18;
-    uchild->task.register_esp = (unsigned long int)&uchild->stack[KERNEL_STACK_SIZE-stack_offset];
-    
-    // paso 2) pila de usuario (pinta travieso, es para el threadCallWrapper)
-    *(void **)(base_addr - sizeof(void *)) = parameter;
-    *(void **)(base_addr - 2*sizeof(void *)) = function;
+
+  int base_addr = (stack_page+1)<<12;
+  
+  uchild->stack[KERNEL_STACK_SIZE-5] = (unsigned long)wrapper; // eip
+  uchild->stack[KERNEL_STACK_SIZE-2] = base_addr - 2*sizeof(DWord); // esp
+  uchild->task.register_esp = (unsigned long int)&uchild->stack[KERNEL_STACK_SIZE-18 /* stack offset */];
+  
+  *(void**)(base_addr - sizeof(DWord)) = parameter;
+  *(void**)(base_addr - 2*sizeof(DWord)) = function;
+
+  // TODO: Pagefault NOMES a user.c quan es crida la funcio "pasta" i s'incrementa una variable global
+  // TODO: L'argument té el valor correcte, comprovat amb el gdb (break pasta; info args), per tant en principi hauria d'estar be? :(
   
   // DWord temp_ebp=*(DWord*)register_ebp;
   /* Prepare child stack for context switch */
@@ -468,17 +469,17 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   // *(DWord*)(uchild->task.register_esp)=(DWord)function;
   // uchild->task.register_esp-=sizeof(DWord);
   // *(DWord*)(uchild->task.register_esp)=0;
-
+  
   /* Set stats to 0 */
   init_stats(&(uchild->task.p_stats));
 
   /* Queue child process into readyqueue */
   uchild->task.state=ST_READY;
-  list_add(&(uchild->task.list), &readyqueue);
+  list_add_tail(&(uchild->task.list), &readyqueue);
 
   // __asm__ __volatile__("int $3"); // breakpoint
 
-  force_task_switch();
+  // force_task_switch();
   
   
   return 0;

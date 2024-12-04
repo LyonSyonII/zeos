@@ -102,10 +102,17 @@ void test_screen(int block) {
   }
 }
 
-int accessible = 93;
+volatile int accessible = 93;
+void pasta() {
+  accessible += 1;
+}
+void pasta2() {
+  volatile int a = 5;
+}
 void test_threads_function(void* argument) {
   int arg = (int)(long)argument;
   printf("[test_thread] Thread #%d spawned\n", &arg);
+  pasta();
   if (accessible != 93) {
     printf("[test_thread] Thread #%d: expected global variable 93, found %d\n", &accessible);
     exit(1);
@@ -129,6 +136,10 @@ void test_threads(int times) {
     exit(1);
   }
   printf("Created thread #%d\n\n", &created_threads);
+
+  wait(100);
+  printf("Accessible: %d\n", &accessible);
+  pasta2();
 }
 
 void test_fork(int times) {
