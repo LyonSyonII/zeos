@@ -13,20 +13,29 @@ IMPL_QUEUE(charq, char);
 
 void test_keyboard(int block);
 void test_screen(int block);
-void test_fork(int block);
+void test_fork(int times);
 
 int __attribute__ ((__section__(".text.main"))) main(void) {
   printchar('\n');
-  
 
   // player: 2
   // enemy: 8
 
   test_keyboard(0);
   // test_screen(0);
-  test_fork(0);
+  test_fork(2);
 
   while (1);
+}
+
+void wait(int ticks) {
+  int prev = -1;
+  while (ticks > 0) {
+    int time = gettime();
+    if (prev == time) continue;
+    prev = time;
+    ticks -= 1;
+  }
 }
 
 void test_keyboard(int block) {
@@ -89,41 +98,31 @@ void test_screen(int block) {
   }
 }
 
-void test_fork(int block) {
+void test_fork(int times) {
+  if (times == 0) return;
+  printf("[test_fork] Starting test #%d\n", &times);
+
   int forks = 0;
   int ret = 1;
   while (ret > 0) {
     ret = fork();
-    forks += 1;
+    if (ret > 0) forks += 1;
   }
   if (ret == 0) {
-    while (block);
     printf("Fork %d exiting\n", &forks);
     exit(0);
   }
-  if (forks != 9) {
-    printf("[test_fork] Expected 9 processes, found %d\n", &forks);
+  if (forks != 8) {
+    printf("[test_fork] Expected 8 processes, found %d\n", &forks);
     exit(1);
   }
   if (errno != ENOMEM) {
     printf("[test_fork] Expected errno of ENOMEM, found %d\n", &errno);
     exit(1);
   }
-  printf("[test_fork] Test successful!\n");
+  // wait some time to allow for other processes to exit
+  wait(10);
+  printf("[test_fork] Test #%d, successful!\n\n", &times);
 
-/*   switch (fork()) {
-    case -1: {
-      print("Fork failed with error: ");
-      perror();
-      exit(1);
-    }
-    case 0: {
-      break;
-    }
-    default: {
-      break;
-    }
-  } */
-
-  while (block);
+  test_fork(times-1);
 }
