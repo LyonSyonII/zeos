@@ -394,7 +394,9 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   // ALLOCATE STACK
   new_ph_pag = alloc_frame();
   if (new_ph_pag <= 0) return -ENOMEM;
-  set_ss_pag(process_PT, PAG_LOG_INIT_DATA+NUM_PAG_DATA, new_ph_pag);
+
+  int stack_page = PAG_LOG_INIT_DATA+NUM_PAG_DATA+global_TID;
+  set_ss_pag(process_PT, stack_page, new_ph_pag);
   
   // set_cr3(get_DIR(current()));
 
@@ -403,13 +405,15 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
 
   int register_ebp;		/* frame pointer */
   /* Map Parent's ebp to child's stack */
-  register_ebp = (int) get_ebp();
+  register_ebp = stack_page << 12;
   register_ebp=(register_ebp - (int)current()) + (int)(uchild);
 
   uchild->task.register_esp=register_ebp + sizeof(DWord);
 
   DWord temp_ebp=*(DWord*)register_ebp;
   /* Prepare child stack for context switch */
+    uchild->task.register_esp-=sizeof(DWord);
+  *(DWord*)(uchild->task.register_esp)=(DWord)parameter;
   uchild->task.register_esp-=sizeof(DWord);
   *(DWord*)(uchild->task.register_esp)=(DWord)function;
   uchild->task.register_esp-=sizeof(DWord);
