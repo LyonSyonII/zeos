@@ -273,9 +273,10 @@ int sys_clrscr(char *b) {
   //printkint((int)get_ebp() - (int)current());
   //Word emptyChar = 0x0000;
   //Word newScreen[25][80];
-  setCursor(0, 0);
-  int act = 0;
   if (access_ok(VERIFY_READ, b, NUM_ROWS*NUM_COLUMNS*sizeof(Word))) { // si el punter es valid
+    
+    copy_from_user(b, (Word*)0xb8000, NUM_COLUMNS*NUM_ROWS*sizeof(Word));
+    /*
     //copy_from_user(b, newScreen, NUM_COLUMNS*NUM_ROWS*sizeof(Word));
     //inc = 2;
     int sizeRow = NUM_COLUMNS*sizeof(Word);
@@ -285,11 +286,13 @@ int sys_clrscr(char *b) {
       for (int j = 0; j < sizeRow; j += sizeof(Word)) {
         printc_colour(row[j], row[j + 1]);
       }
-    }
+    }*/
   } else { // si no default pantalla buida
+    Word *screen = (Word*)0xb8000;
     for (int i = 0; i < NUM_ROWS; ++i) {
       for (int j = 0; j < NUM_COLUMNS; ++j) {
-        printc_colour(0, 0);
+        *screen = 0x0000;
+        ++screen;
       }
     }
     /*//inc = 0;
@@ -360,6 +363,12 @@ int sys_semdestroy() {
   return 0;
 }
 
+
+int aux_thread() {
+  printkhex((unsigned long)(get_PT(current())[286].entry));
+  return 0;
+}
+
 int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* parameter, void* wrapper) {
   struct task_struct* parent = current();
   struct list_head *lhcurrent = NULL;
@@ -375,7 +384,11 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   uchild=(union task_union*)list_head_to_task_struct(lhcurrent);
   
   /* Copy the parent's task struct to child's */
-  copy_data(current(), uchild, sizeof(union task_union));
+  copy_data(parent, uchild, sizeof(union task_union));
+  
+  /* new pages dir */
+  // allocate_DIR((struct task_struct*)uchild);
+  
   
   page_table_entry *process_PT = get_PT(&uchild->task);
   page_table_entry *parent_PT = get_PT(parent);
@@ -407,15 +420,15 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
     if (frame > 0) {
       int page = stack_page+i;
       printkf("[KERNEL] Assigned page %d to frame %d\n", &page, &frame);
-      set_ss_pag(parent_PT, stack_page+i, frame);
+      set_ss_pag(process_PT, stack_page+i, frame);
       continue;
     }
     
     // not enough physical pages, abort
     while (i > 0) {
-      i += 1;
-      free_frame(get_frame(parent_PT, stack_page+i));
-      del_ss_pag(parent_PT, stack_page+i);
+      i -= 1;
+      free_frame(get_frame(process_PT, stack_page+i));
+      del_ss_pag(process_PT, stack_page+i);
     }
     set_cr3(get_DIR(parent));
     return -ENOMEM;
