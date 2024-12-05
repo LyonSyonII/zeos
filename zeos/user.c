@@ -102,44 +102,24 @@ void test_screen(int block) {
   }
 }
 
-volatile int accessible = 93;
-void pasta() {
-  accessible += 1;
+/// Test Thread Function, prints the address of its argument
+void ttf(void* arg) {
+  printf("[test_thread] Thread #%p spawned\n", arg);
+  while (1); // Exit not needed, wrapper is used
 }
-void pasta2() {
-  volatile int a = 5;
-}
-void test_threads_function(void* argument) {
-  int arg = (int)(long)argument;
-  printf("[test_thread] Thread #%d spawned\n", &arg);
-  pasta();
-  if (accessible != 93) {
-    printf("[test_thread] Thread #%d: expected global variable 93, found %d\n", &accessible);
-    exit(1);
-  }
-  while (1);
-}
-void test_threads(int times) {
-  int created_threads = 5;
-  
-  int ret = threadCreateWithStack(test_threads_function, 1, (void*)(long)created_threads);
-  if (ret < 0) {
-    print("[test_thread] Could not spawn thread: "); perror();
-    exit(1);
-  }
-  printf("Created thread #%d\n\n", &created_threads);
-  
-  created_threads += 1;
-  ret = threadCreateWithStack(test_threads_function, 1, (void*)(long)created_threads);
-  if (ret < 0) {
-    print("[test_thread] Could not spawn thread: "); perror();
-    exit(1);
-  }
-  printf("Created thread #%d\n\n", &created_threads);
 
-  wait(100);
-  printf("Accessible: %d\n", &accessible);
-  pasta2();
+void test_threads(int times) {
+  for (int i = 0; i < times; ++i) {
+    int ret = threadCreateWithStack(ttf, 2, (void*)(long)i);
+    if (ret < 0) {
+      print("[test_thread] Could not spawn thread: "); perror();
+      exit();
+    }
+    printf("Created thread #%d\n\n", &i);
+  }
+  
+  // TODO: A wrapper for the main function is needed? How will it free itself?
+  while (1);
 }
 
 void test_fork(int times) {

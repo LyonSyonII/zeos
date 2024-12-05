@@ -111,3 +111,8 @@ gdb: zeos.bin
 
 emuldbg: zeos.bin
 	bochs_nogdb -q -f .bochsrc
+
+# test build, clean and tar files
+entrega: zeos.bin
+	$(MAKE) clean
+	tar czf ../entrega.tar.gz ../zeos

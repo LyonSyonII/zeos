@@ -45,9 +45,13 @@ ENTRY(fork)
 	ret
 
 ENTRY(threadCreateWithStackWrapper)
-	pushl 4(%esp)
-	call 4(%esp)
-	call exit // no te arguments
+	pushl %ebp
+	movl %esp,%ebp
+	pushl 12(%ebp)
+	movl 8(%ebp),%eax
+	call *%eax
+	call exit
+	ret
 
 /* int threadCreateWithStack(void (*function)(void *arg), int N, void *parameter) */
 /* int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *parameter, void* wrapper) */

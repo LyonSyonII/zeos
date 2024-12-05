@@ -163,7 +163,7 @@ int sys_write(int fd, char *buffer, int nbytes) {
 char localbuffer [TAM_BUFFER];
 int bytes_left;
 int ret;
-
+	
 	if ((ret = check_fd(fd, ESCRIPTURA)))
 		return ret;
 	if (nbytes < 0)
@@ -299,13 +299,13 @@ int sys_clrscr(char *b) {
       }
     }*/
   }
-
+  
   //int act = 0;
 /*  setCursor(0, 0);
   
   // implementacions varies
-
-
+  
+  
   for (int i = 0; i < 25; ++i) { 
     for (int j = 0; j < 80; ++j) {
       printc_color((Byte)(newScreen[i][j]&0xFF), (Byte)(newScreen[i][j]>>8&0xFF));
@@ -317,7 +317,7 @@ int sys_clrscr(char *b) {
   for (int act = 0; act < NUM_COLUMNS*NUM_ROWS*sizeof(Word); act += sizeof(Word)) {
     printc_color(b[act], b[act + 1]);
   }
-
+  
   for (int i = 0; i < 25; ++i) {
     for (int j = 0; j < 80; ++j) {
       printc_color(b[act], b[act + 1]);
@@ -331,16 +331,7 @@ int sys_clrscr(char *b) {
 
 int sys_getkey(char* b, int timeout) {
   if (!access_ok(VERIFY_WRITE, b, sizeof(char))) return -EFAULT;
-
-  // EN PRINCIPI ARREGLAT AMB EXECUTAR IMMEDIATAMENT
-  // proces 1 : bloquejat
-  // cliquem tecla
-  // desbloquejem proces 1
-  // continuem a proces 2
-  // proces 2 : entra a getkey
-  // es menja la tecla
-  // proces 1 : desbloquejat pero no te tecla i retornara erroniament un -1
-
+  
   if (kbuf_pop(&kbuf, b)) return 0;
   
   // ordenar llista per timeout (ens deixa com ho tenim pero no li mola)
@@ -386,18 +377,17 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   /* Copy the parent's task struct to child's */
   copy_data(current(), uchild, sizeof(union task_union));
   
-  /* new pages dir */
-  // allocate_DIR((struct task_struct*)uchild);
-  
-  
   page_table_entry *process_PT = get_PT(&uchild->task);
   page_table_entry *parent_PT = get_PT(parent);
   
+  process_PT->bits.pbase_addr = parent_PT->bits.pbase_addr;
   
-  int stack_page = PAG_LOG_INIT_DATA+NUM_PAG_DATA+1; // +1 pq no se solapi amb l'stack del proces pare i "funcioni", un cop vagi s'ha de treure
+  
+  int stack_page = PAG_LOG_INIT_DATA+NUM_PAG_DATA; // +1 pq no se solapi amb l'stack del proces pare i "funcioni", un cop vagi s'ha de treure
   printkf("[KERNEL] parent: 0x%p; new: 0x%p\n", parent, &uchild->stack);
   printkf("[KERNEL] Searching page from %d\n", &stack_page);
   int found = 0;
+  // Last page is reserved by sys_fork
   while (found < N && stack_page < TOTAL_PAGES-1) {
     if (parent_PT[stack_page].entry == 0) found += 1;
     else found = 0;
@@ -430,46 +420,24 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
     set_cr3(get_DIR(parent));
     return -ENOMEM;
   }
-  
-  // set_cr3(get_DIR(current()));
-  {
-    int end_of_data_section = ((stack_page+1)<<12) - sizeof(DWord);
-    printkf("End of data section %d; stack_page: %p;\n", (int*)end_of_data_section, (int*)end_of_data_section);
-  }
 
   uchild->task.TID=++global_TID;
   uchild->task.state=ST_READY;
   
-/*   int register_ebp = ((stack_page+1) << 12) - sizeof(DWord);
-  // register_ebp=(register_ebp - (int)current()) + (int)(uchild);
-  printkf("register_ebp: %p; value: %d\n", (int*)register_ebp);
+  // setup user and system stack
+  unsigned long* user_stack = (unsigned long*)(long)(stack_page << 12);
+  int USER_STACK_SIZE = N * 1024;
+  user_stack[USER_STACK_SIZE - 3] = 0; // return address will never be reached
+  user_stack[USER_STACK_SIZE - 2] = (unsigned long)function;
+  user_stack[USER_STACK_SIZE - 1] = (unsigned long)parameter;  
   
-  uchild->task.register_esp=register_ebp - sizeof(DWord)*3;
-  DWord* stack = (unsigned long*)(long)uchild->task.register_esp;
-  stack[0] = 0;
-  stack[1] = (DWord)function;
-  stack[2] = (DWord)parameter; */
+  uchild->stack[KERNEL_STACK_SIZE - 5] = (unsigned long)wrapper; // eip
+  uchild->stack[KERNEL_STACK_SIZE - 2] = (unsigned long)&user_stack[USER_STACK_SIZE - 3]; // esp
+  uchild->task.register_esp = (int)(long)&uchild->stack[KERNEL_STACK_SIZE - 18]; // ebp
 
-  int base_addr = (stack_page+1)<<12;
-  
-  uchild->stack[KERNEL_STACK_SIZE-5] = (unsigned long)wrapper; // eip
-  uchild->stack[KERNEL_STACK_SIZE-2] = base_addr - 2*sizeof(DWord); // esp
-  uchild->task.register_esp = (unsigned long int)&uchild->stack[KERNEL_STACK_SIZE-18 /* stack offset */];
-  
-  *(void**)(base_addr - sizeof(DWord)) = parameter;
-  *(void**)(base_addr - 2*sizeof(DWord)) = function;
-
-  // TODO: Pagefault NOMES a user.c quan es crida la funcio "pasta" i s'incrementa una variable global
-  // TODO: L'argument té el valor correcte, comprovat amb el gdb (break pasta; info args), per tant en principi hauria d'estar be? :(
-  
-  // DWord temp_ebp=*(DWord*)register_ebp;
-  /* Prepare child stack for context switch */
-   // uchild->task.register_esp-=sizeof(DWord);
-  // *(DWord*)(uchild->task.register_esp)=(DWord)parameter;
-  // uchild->task.register_esp-=sizeof(DWord);
-  // *(DWord*)(uchild->task.register_esp)=(DWord)function;
-  // uchild->task.register_esp-=sizeof(DWord);
-  // *(DWord*)(uchild->task.register_esp)=0;
+  // TODO: Modify kernel structures to account for allocated region (access_ok)
+  // OPTION 1: Create a `struct task_threads protected_task_threads[NR_TASKS+2]`, where common attributes between threads are stored (allocated_size, num_threads)
+  // OPTION 2: Reserve a page accessible from all threads with these attributes
   
   /* Set stats to 0 */
   init_stats(&(uchild->task.p_stats));
@@ -477,106 +445,9 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   /* Queue child process into readyqueue */
   uchild->task.state=ST_READY;
   list_add_tail(&(uchild->task.list), &readyqueue);
-
-  // __asm__ __volatile__("int $3"); // breakpoint
-
-  // force_task_switch();
-  
   
   return 0;
 }
-
-
-int sys_threadcreatewithstackk(void (*function)(void* arg), int N, void* parameter, void* wrapper) {
-  // return function must exist
-  if (function == NULL) return -EINVAL;
-  // thread must have at least one stack page
-  if (N <= 0) return -EINVAL;
-  // abort if no task struct available
-  if (list_empty(&freequeue)) return -ENOMEM;
-  
-  struct task_struct* parent = current();
-
-  // get task struct from the freequeue
-  struct list_head* new_lh = list_first(&freequeue);
-  list_del(new_lh);
-  union task_union* new_tu = (union task_union*)list_head_to_task_struct(new_lh);
-  
-  // copy whole stack from parent
-  copy_data(parent, new_tu, sizeof(union task_union));
-  
-  // search Page Table for N consecutive pages
-  // (TOTAL_PAGES-1) is reserved by sys_fork
-  page_table_entry* PT = get_PT(parent);
-  int pag = PAG_LOG_INIT_DATA+NUM_PAG_DATA;
-  printkf("[KERNEL] parent: 0x%p; new: 0x%p\n", parent, &new_tu->stack);
-  printkf("[KERNEL] Searching page from %d\n", &pag);
-  int found = 0;
-  while (found < N && pag < TOTAL_PAGES-1) {
-    if (PT[pag].entry == 0) found += 1;
-    else found = 0;
-    pag += 1;
-  }
-  // no available consecutive pages, abort
-  if (found < N) return -ENOMEM;
-  printkf("[KERNEL] Found pages until %d\n", &pag);
-  // set pag to start of region
-  pag -= N;
-  printkf("[KERNEL] New pages start %d\n", &pag);
-
-  // region found, alloc pages
-  for (int i = 0; i < N; i++) {
-    int frame = alloc_frame();
-    if (frame > 0) {
-      int page = pag+i;
-      printkf("[KERNEL] Assigned page %d to frame %d\n", &page, &frame);
-      set_ss_pag(PT, pag+i, frame);
-      continue;
-    }
-    
-    // not enough physical pages, abort
-    while (i > 0) {
-      i -= 1;
-      free_frame(get_frame(PT, pag+i));
-      del_ss_pag(PT, pag+i);
-    }
-    set_cr3(get_DIR(parent));
-    return -ENOMEM;
-  }
-  
-  // new thread shares directory with parent
-  // DATA, SYSTEM and CODE pages are shared
-  // new_tu->task.dir_pages_baseAddr = parent->dir_pages_baseAddr;
-  
-  // Initialize unique fields
-  init_stats(&new_tu->task.p_stats);
-  global_TID += 1;
-  new_tu->task.TID = global_TID;
-  
-  int base_addr = (pag+1)<<12;
-  
-  new_tu->stack[KERNEL_STACK_SIZE-5] = (unsigned long)wrapper; // eip
-  new_tu->stack[KERNEL_STACK_SIZE-2] = base_addr - 2*sizeof(void *); // esp
-  new_tu->task.register_esp = (unsigned long int)&new_tu->stack[KERNEL_STACK_SIZE-18 /* stack offset */];
-  
-  unsigned long* stack = &new_tu->stack[KERNEL_STACK_SIZE];
-  void** base = (void**)(base_addr - sizeof(void*));
-  printkf("Stack: %p; Base: %p;\n", stack, base);
-  // new_tu->stack[KERNEL_STACK_SIZE] = (long) parameter;
-  // new_tu->stack[KERNEL_STACK_SIZE-1] = (long) function;
-  *(void**)(base_addr - sizeof(void*)) = parameter;
-  *(void**)(base_addr - 2*sizeof(void*)) = function;
-  
-  new_tu->task.state = ST_READY;
-  // list_add_tail(&new_tu->task.list, &readyqueue);
-  
-  printkf("[KERNEL] Forcing task switch\n");
-  list_add(&new_tu->task.list, &readyqueue);
-  force_task_switch();
-  
-  return 0;
-}
-
 
 int sys_memregget() {
   return 0;
