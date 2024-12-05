@@ -205,18 +205,3 @@ void setCursor(int nx, int ny) {
   x = nx;
   y = ny;
 }
-
-
-void printc_colour(char c, Byte color) {
-  Byte aux = screenColor;
-  screenColor = color;
-  printc(c);
-  screenColor = aux;
-  /*Word ch = (Word) (c & 0x00FF) | (color<<8);
-	Word *screen = (Word *)0xb8000;
-	screen[(y * NUM_COLUMNS + x)] = ch;
-  if (++x >= NUM_COLUMNS) {
-      x = 0;
-      y=(y+1)%NUM_ROWS;
-    }*/
-}
