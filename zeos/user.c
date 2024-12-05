@@ -108,14 +108,16 @@ void ttf(void* arg) {
   while (1); // Exit not needed, wrapper is used
 }
 
+/// Tests spawning `times` threads.
+/// THIS FUNCTION NEVER RETURNS
 void test_threads(int times) {
-  for (int i = 0; i < times; ++i) {
+  for (int i = 1; i <= times; ++i) {
     int ret = threadCreateWithStack(ttf, 2, (void*)(long)i);
     if (ret < 0) {
       print("[test_thread] Could not spawn thread: "); perror();
       exit();
     }
-    printf("Created thread #%d\n\n", &i);
+    printf("[test_thread] Created thread #%d\n\n", &i);
   }
   
   // TODO: A wrapper for the main function is needed? How will it free itself?
