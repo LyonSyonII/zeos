@@ -1,6 +1,7 @@
 /*
  * sys.c - Syscalls implementation
  */
+#include "list.h"
 #include "types.h"
 #include <devices.h>
 
@@ -246,9 +247,6 @@ int sys_get_stats(int pid, struct stats *st)
 
 
 
-
-// empty
-
 // Si estem fora del rang en alguna coordenada canviarem el valor a la coordenada valida més proxima
 int sys_gotoxy(int x, int y) {
   if (x >= NUM_COLUMNS) x = NUM_COLUMNS - 1;
@@ -269,24 +267,8 @@ int sys_changecolour(int fg, int bg) {
 }
 
 int sys_clrscr(char *b) {
-  //int inc;
-  //printkint((int)get_ebp() - (int)current());
-  //Word emptyChar = 0x0000;
-  //Word newScreen[25][80];
   if (access_ok(VERIFY_READ, b, NUM_ROWS*NUM_COLUMNS*sizeof(Word))) { // si el punter es valid
-    
     copy_from_user(b, (Word*)0xb8000, NUM_COLUMNS*NUM_ROWS*sizeof(Word));
-    /*
-    //copy_from_user(b, newScreen, NUM_COLUMNS*NUM_ROWS*sizeof(Word));
-    //inc = 2;
-    int sizeRow = NUM_COLUMNS*sizeof(Word);
-    for (int i = 0; i < NUM_ROWS; ++i) {
-      char row[sizeRow];
-      copy_from_user(&b[sizeRow*i], row, sizeRow);
-      for (int j = 0; j < sizeRow; j += sizeof(Word)) {
-        printc_colour(row[j], row[j + 1]);
-      }
-    }*/
   } else { // si no default pantalla buida
     Word *screen = (Word*)0xb8000;
     for (int i = 0; i < NUM_ROWS; ++i) {
@@ -295,39 +277,7 @@ int sys_clrscr(char *b) {
         ++screen;
       }
     }
-    /*//inc = 0;
-    for (int i = 0; i < 25; ++i) {
-      for (int j = 0; j < 80; ++j) {
-        newScreen[i][j] = 0x0000;
-      }
-    }*/
   }
-  
-  //int act = 0;
-/*  setCursor(0, 0);
-  
-  // implementacions varies
-  
-  
-  for (int i = 0; i < 25; ++i) { 
-    for (int j = 0; j < 80; ++j) {
-      printc_color((Byte)(newScreen[i][j]&0xFF), (Byte)(newScreen[i][j]>>8&0xFF));
-    }
-  }
-  */
-  //for (int act = 0; act < NUM_COLUMNS*NUM_ROWS; ++act) printc_color((Byte)newScreen[act]&0xFF, (Byte)((newScreen[act]>>8))&0xFF);
-/*
-  for (int act = 0; act < NUM_COLUMNS*NUM_ROWS*sizeof(Word); act += sizeof(Word)) {
-    printc_color(b[act], b[act + 1]);
-  }
-  
-  for (int i = 0; i < 25; ++i) {
-    for (int j = 0; j < 80; ++j) {
-      printc_color(b[act], b[act + 1]);
-      act += inc;
-    }
-  }*/
-
 
   return 0;
 }
@@ -347,19 +297,78 @@ int sys_getkey(char* b, int timeout) {
   return -ETIME;
 }
 
-int sys_semcreate() {
+// Create an initial semaphore with an initial counter of initial_value; 
+// 
+// The returned `sem_t` is unusable from user space.
+struct sem_t* sys_semcreate(int initial_value) {
+  if (list_empty(&semqueue)) return NULL;
+  struct list_head* first = list_first(&semqueue);
+  list_del(first);
+  struct sem_t* sem = list_entry(first, struct sem_t, list);
+  
+  INIT_LIST_HEAD(&sem->blocked);
+  sem->creator_TID = current()->TID;
+  sem->count = initial_value;
+
+  printkf("[sys_semcreate] Returning sem to the user: 0x%p\n", sem);
+  
+  return sem;
+}
+
+int sem_ptr_correct(struct sem_t* s) {
+  // User shouldn't be able to access `s`, if it can it's probably a security hole
+  // Check if `s` points where it should 
+  return s >= &semaphores[0] && s <= &semaphores[NR_TASKS];
+}
+
+// Decrement the semaphore’s counter and block the current thread if the counter is negative
+int sys_semwait(struct sem_t* s) {
+  printkf("[sys_semwait] Received s: 0x%p\n", s);
+  
+  if (!sem_ptr_correct(s)) return -EFAULT;
+
+  s->count -= 1;
+  if (s->count < 0) {
+    printkf("[sys_semwait] Sem count is negative, blocking thread...\n");
+    update_process_state_rr(current(), &s->blocked);
+    sched_next_rr();
+  }
+
   return 0;
 }
 
-int sys_semwait() {
+// Increase the semaphores's counter and unblock the first blocked thread in the semaphore's queue
+int sys_semsignal(struct sem_t* s) {
+  printkf("[sys_semwait] Received s: 0x%p\n", s);
+  if (!sem_ptr_correct(s)) return -EFAULT;
+
+  s->count += 1;
+  if (list_empty(&s->blocked)) return 0;
+
+  struct list_head* first = list_first(&s->blocked);
+  struct task_struct* task = list_entry(first, struct task_struct, list);
+  update_process_state_rr(task, &readyqueue);
+
   return 0;
 }
 
-int sys_semsignal() {
-  return 0;
-}
+// Destroy the semaphore (only the thread that created a semaphore can destroy it)
+int sys_semdestroy(struct sem_t* s) {
+  if (!sem_ptr_correct(s)) return -EFAULT;
+  if (s->creator_TID != current()->TID) return -EINVAL;
+  
+  // unblock all threads
+  struct list_head *entry, *n;
+  list_for_each_safe(entry, n, &s->blocked) {
+    struct task_struct* task = list_entry(entry, struct task_struct, list);
+    update_process_state_rr(task, &readyqueue);
+  }
 
-int sys_semdestroy() {
+  // TODO: Add marker to task to know when a semaphore has been destroyed and skip waiting?
+  
+  // free semaphore
+  list_add_tail(&s->list, &semqueue);
+  
   return 0;
 }
 

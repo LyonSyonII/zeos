@@ -2,6 +2,7 @@
  * sched.c - initializes struct for task 0 anda task 1
  */
 
+#include "list.h"
 #include <types.h>
 #include <hardware.h>
 #include <segment.h>
@@ -19,6 +20,9 @@ union task_union protected_tasks[NR_TASKS+2]
   __attribute__((__section__(".data.task")));
 
 union task_union *task = &protected_tasks[1]; /* == union task_union task[NR_TASKS] */
+
+struct sem_t semaphores[NR_TASKS+2];
+struct list_head semqueue;
 
 #if 0
 struct task_struct *list_head_to_task_struct(struct list_head *l)
@@ -202,7 +206,7 @@ void init_task1(void)
   init_stats(&c->p_stats);
 
   allocate_DIR(c);
-
+  
   set_user_pages(c);
 
   tss.esp0=(DWord)&(uc->stack[KERNEL_STACK_SIZE]);
@@ -225,10 +229,18 @@ void init_freequeue()
   }
 }
 
+void init_semaphores() {
+  INIT_LIST_HEAD(&semqueue);
+  for (int i=0; i < NR_TASKS; i++) {
+    list_add_tail(&(semaphores[i].list), &semqueue);
+  }
+}
+
 void init_sched()
 {
   init_freequeue();
   INIT_LIST_HEAD(&readyqueue);
+  init_semaphores();
 }
 
 struct task_struct* current()

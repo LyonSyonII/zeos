@@ -182,8 +182,8 @@ ENTRY(semCreate)
 	movl $28, %eax
 	call syscall_sysenter
 	popl %ebx
-	test %eax, %eax
-	js nok
+	// test %eax, %eax
+	// js nok
 	popl %ebp
 	ret
 

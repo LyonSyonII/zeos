@@ -15,6 +15,7 @@ void test_keyboard(int block);
 void test_screen(int block);
 void test_threads(int times);
 void test_fork(int times);
+void test_semaphore();
 
 int __attribute__ ((__section__(".text.main"))) main(void) {
   printchar('\n');
@@ -24,8 +25,9 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
 
   // test_keyboard(0);
   // test_screen(0);
-  test_threads(2);
+  // test_threads(2);
   // test_fork(4);
+  test_semaphore();
 
   println("Finished tests!");
   
@@ -37,6 +39,16 @@ void wait(int ticks) {
   while (ticks > 0) {
     int time = gettime();
     if (prev == time) continue;
+    prev = time;
+    ticks -= 1;
+  }
+}
+void wait_with_callback(int ticks, void callback(int time)) {
+  int prev = -1;
+  while (ticks > 0) {
+    int time = gettime();
+    if (prev == time) continue;
+    callback(time);
     prev = time;
     ticks -= 1;
   }
@@ -156,4 +168,35 @@ void test_fork(int times) {
   printf("[test_fork] Test #%d, successful!\n\n", &times);
 
   test_fork(times-1);
+}
+
+
+void stt(struct sem_t* sem) {
+  printf("[stt] Thread callback entered, doing something...\n");
+  
+  void (*callback)(int) = ({
+    void __fn__ (int time) { printf("[stt] time: %d\n", &time); }
+    __fn__;
+  });
+
+  wait_with_callback(20, callback);
+  // wait(30);
+  semSignal(sem);
+  
+  while (1);
+}
+
+void test_semaphore() {
+  struct sem_t* sem = semCreate(0);
+  printf("[test-semaphore] Sem created with address: %p\n", sem);
+  
+  threadCreateWithStack((void*)stt, 1, sem);
+  printf("[test-semaphore] Thread spawned\n");
+  
+  semWait(sem);
+  printf("[test-semaphore] Main thread unblocked!\n");
+
+  semDestroy(sem);
+  
+  while (1);
 }

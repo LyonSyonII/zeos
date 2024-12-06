@@ -13,7 +13,7 @@
 
 extern int errno;
 
-typedef struct { } sem_t;
+struct sem_t { Byte DONOTACCESSTHISSTRUCTORYOUWILLDIE; };
 
 int write(int fd, char *buffer, int size);
 
@@ -43,13 +43,19 @@ int clrscr(char* b);
 
 int threadCreateWithStack(void (*function)(void *arg), int N, void *parameter);
 
-sem_t* semCreate(int initial_value);
+// Create an initial semaphore with an initial counter of initial_value; 
+// 
+// The returned `sem_t` is unusable from user space.
+struct sem_t* semCreate(int initial_value);
 
-int semWait(sem_t* s);
+// Decrement the semaphore’s counter and block the current thread if the counter is negative
+int semWait(struct sem_t* s);
 
-int semSignal(sem_t* s);
+// Increase the semaphores's counter and unblock the first blocked thread in the semaphore's queue
+int semSignal(struct sem_t* s);
 
-int semDestroy(sem_t* s);
+// Destroy the semaphore (only the thread that created a semaphore can destroy it)
+int semDestroy(struct sem_t* s);
 
 char* memRegGet(int num_pages);
 
