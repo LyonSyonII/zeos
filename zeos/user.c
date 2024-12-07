@@ -16,6 +16,7 @@ void test_screen(int block);
 void test_threads(int times);
 void test_fork(int times);
 void test_semaphore();
+void test_alloc();
 
 int __attribute__ ((__section__(".text.main"))) main(void) {
   printchar('\n');
@@ -27,7 +28,8 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
   // test_screen(0);
   // test_threads(2);
   // test_fork(4);
-  test_semaphore();
+  // test_semaphore();
+  test_alloc();
 
   println("Finished tests!");
   
@@ -220,4 +222,29 @@ void test_semaphore() {
   }
   
   while (1);
+}
+
+void test_alloc() {
+  int n = 3;
+  printf("[test-alloc] Allocating %d pages...\n", &n);
+  char* alloc = memRegGet(n);
+  if (alloc == NULL) {
+    printf("[test-alloc] Error allocating %d pages: ", &n); perror();
+    exit();
+  }
+  alloc[0] = 'H';
+  alloc[1] = 'o';
+  alloc[2] = 'l';
+  alloc[3] = 'a';
+  alloc[4] = 0;
+
+  printf("[test-alloc] Printing allocated string: %s\n", alloc);
+  
+  printf("[test-alloc] Deallocating pages...\n", &n);
+  if (memRegDel(alloc) < 0) {
+    printf("[test-alloc] Error deallocating %d pages: ", &n); perror();
+    exit();
+  }
+  
+  printf("[test-alloc] Test successful!\n");
 }
