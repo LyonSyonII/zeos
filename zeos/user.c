@@ -174,14 +174,17 @@ void test_fork(int times) {
 void stt(struct sem_t* sem) {
   printf("[stt] Thread callback entered, doing something...\n");
   
+  // miraculosament aixo crea una funcio anonima
   void (*callback)(int) = ({
     void __fn__ (int time) { printf("[stt] time: %d\n", &time); }
     __fn__;
   });
 
   wait_with_callback(20, callback);
-  // wait(30);
+  
   semSignal(sem);
+
+  printf("[test-semaphore] Thread exited\n");
   
   while (1);
 }
@@ -194,9 +197,27 @@ void test_semaphore() {
   printf("[test-semaphore] Thread spawned\n");
   
   semWait(sem);
-  printf("[test-semaphore] Main thread unblocked!\n");
+  printf("[test-semaphore] Main thread unblocked!\n\n");
 
   semDestroy(sem);
+
+  sem = semCreate(1);
+  int pid = fork();
+  // make parent wait
+  if (pid != 0) yield();
+  semWait(sem);
+  
+  printf("[test-semaphore] I'm continuing, fork result: %d\n", &pid);
+  wait(500);
+  semSignal(sem);
+  
+  if (pid == 0) {
+    printf("[test-semaphore] Child: wait ended\n", &pid);
+    exit();
+  } else {
+    printf("[test-semaphore] Parent: wait ended\n", &pid);
+    semDestroy(sem);
+  }
   
   while (1);
 }
