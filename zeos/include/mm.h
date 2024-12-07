@@ -39,4 +39,17 @@ void set_ss_pag(page_table_entry *PT, unsigned page,unsigned frame);
 void del_ss_pag(page_table_entry *PT, unsigned page);
 unsigned int get_frame(page_table_entry *PT, unsigned int page);
 
+// custom
+
+struct page_metadata {
+    unsigned int marker;
+    // Size of the allocated region *including* the page where the metadata is stored.
+    unsigned int size;
+};
+struct page_metadata new_page_metadata(unsigned int size);
+#define metadata_ptr_ok(metadata) (metadata->marker == 0xDEADBEEF)
+
+int alloc_pages(struct task_struct *task, int N);
+void dealloc_pages(struct task_struct *task, int start_page, int N);
+
 #endif  /* __MM_H__ */

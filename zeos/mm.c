@@ -2,11 +2,13 @@
  * mm.c - Memory Management: Paging & segment memory management
  */
 
+#include <io.h>
 #include <types.h>
 #include <mm.h>
 #include <segment.h>
 #include <hardware.h>
 #include <sched.h>
+#include <errno.h>
 
 Byte phys_mem[TOTAL_PAGES];
 
@@ -264,5 +266,75 @@ void del_ss_pag(page_table_entry *PT, unsigned logical_page)
 
 /* get_frame - Returns the physical frame associated to page 'logical_page' */
 unsigned int get_frame (page_table_entry *PT, unsigned int logical_page){
-     return PT[logical_page].bits.pbase_addr; 
+  return PT[logical_page].bits.pbase_addr; 
+}
+
+
+// custom
+
+struct page_metadata new_page_metadata(unsigned int size) {
+  return (struct page_metadata){
+    .marker = 0xDEADBEEF,
+    size
+  };
+}
+
+// Allocates N consecutive pages in the main directory of the given task_struct.
+// 
+// Returns the first allocated page, or a negative value in case of error.
+int alloc_pages(struct task_struct *task, int N) {
+  page_table_entry* process_PT = get_PT(task);
+
+  int stack_page = PAG_LOG_INIT_DATA+NUM_PAG_DATA;
+  printkf("[KERNEL] Searching page from %d\n", &stack_page);
+
+  int found = 0;
+  // Last page is reserved by sys_fork
+  while (found < N && stack_page < TOTAL_PAGES-1) {
+    if (process_PT[stack_page].entry == 0) found += 1;
+    else found = 0;
+    stack_page += 1;
+  }
+  // no available consecutive pages, abort
+  if (found < N) return -ENOMEM;
+  
+  printkf("[KERNEL] Found pages until %d\n", &stack_page);
+  // set pag to start of region
+  stack_page -= N;
+  printkf("[KERNEL] New pages start %d\n", &stack_page);
+  
+  // region found, alloc pages
+  for (int i = 0; i < N; i++) {
+    int frame = alloc_frame();
+    if (frame > 0) {
+      int page = stack_page+i;
+      printkf("[KERNEL] Assigned page %d to frame %d\n", &page, &frame);
+      set_ss_pag(process_PT, stack_page+i, frame);
+      continue;
+    }
+    
+    // not enough physical pages, abort
+    while (i > 0) {
+      i -= 1;
+      free_frame(get_frame(process_PT, stack_page+i));
+      del_ss_pag(process_PT, stack_page+i);
+    }
+    set_cr3(get_DIR(task));
+    return -ENOMEM;
+  }
+
+  return stack_page;
+}
+
+// Deallocates `N` consecutive pages starting from `start_page`.
+// The caller is responsible to check if the `start_page..N` region is valid.
+void dealloc_pages(struct task_struct *task, int start_page, int N) {
+  page_table_entry* PT = get_PT(task);
+  for (int page = start_page; page < start_page+N; ++page) {
+    free_frame(get_frame(PT, page));
+    del_ss_pag(PT, page);
+    printkf("[KERNEL] Deallocating page %d\n", &page);
+  }
+
+  set_cr3(get_DIR(task));
 }
