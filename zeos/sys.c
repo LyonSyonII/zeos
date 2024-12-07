@@ -302,6 +302,7 @@ int sys_getkey(char* b, int timeout) {
 // The returned `sem_t` is unusable from user space.
 struct sem_t* sys_semcreate(int initial_value) {
   if (list_empty(&semqueue)) return NULL;
+  
   struct list_head* first = list_first(&semqueue);
   list_del(first);
   struct sem_t* sem = list_entry(first, struct sem_t, list);
@@ -310,7 +311,7 @@ struct sem_t* sys_semcreate(int initial_value) {
   sem->creator_TID = current()->TID;
   sem->count = initial_value;
 
-  printkf("[sys_semcreate] Returning sem to the user: 0x%p\n", sem);
+  // printkf("[sys_semcreate] Returning sem to the user: 0x%p\n", sem);
   
   return sem;
 }
@@ -323,13 +324,13 @@ int sem_ptr_correct(struct sem_t* s) {
 
 // Decrement the semaphore’s counter and block the current thread if the counter is negative
 int sys_semwait(struct sem_t* s) {
-  printkf("[sys_semwait] Received s: 0x%p\n", s);
+  // printkf("[sys_semwait] Received s: 0x%p\n", s);
   
   if (!sem_ptr_correct(s)) return -EFAULT;
 
   s->count -= 1;
   if (s->count < 0) {
-    printkf("[sys_semwait] Sem count is negative, blocking thread...\n");
+    // printkf("[sys_semwait] Sem count is negative, blocking thread...\n");
     update_process_state_rr(current(), &s->blocked);
     sched_next_rr();
   }
@@ -339,7 +340,7 @@ int sys_semwait(struct sem_t* s) {
 
 // Increase the semaphores's counter and unblock the first blocked thread in the semaphore's queue
 int sys_semsignal(struct sem_t* s) {
-  printkf("[sys_semwait] Received s: 0x%p\n", s);
+  // printkf("[sys_semwait] Received s: 0x%p\n", s);
   if (!sem_ptr_correct(s)) return -EFAULT;
 
   s->count += 1;
@@ -369,12 +370,6 @@ int sys_semdestroy(struct sem_t* s) {
   // free semaphore
   list_add_tail(&s->list, &semqueue);
   
-  return 0;
-}
-
-
-int aux_thread() {
-  printkhex((unsigned long)(get_PT(current())[286].entry));
   return 0;
 }
 
