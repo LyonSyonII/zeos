@@ -129,6 +129,7 @@ int sys_fork(void)
     /* Deny access to the child's memory space */
     set_cr3(get_DIR(current()));
   }
+  // TODO: Copy parent's allocated pages too (memRegGet description)
   // set_cr3(get_DIR(current()));
   
   uchild->task.PID=++global_PID;
@@ -316,7 +317,7 @@ struct sem_t* sys_semcreate(int initial_value) {
   return sem;
 }
 
-int sem_ptr_correct(struct sem_t* s) {
+int sem_ptr_ok(struct sem_t* s) {
   // User shouldn't be able to access `s`, if it can it's probably a security hole
   // Check if `s` points where it should 
   return s >= &semaphores[0] && s <= &semaphores[NR_TASKS];
@@ -326,7 +327,7 @@ int sem_ptr_correct(struct sem_t* s) {
 int sys_semwait(struct sem_t* s) {
   // printkf("[sys_semwait] Received s: 0x%p\n", s);
   
-  if (!sem_ptr_correct(s)) return -EFAULT;
+  if (!sem_ptr_ok(s)) return -EFAULT;
 
   s->count -= 1;
   if (s->count < 0) {
@@ -341,7 +342,7 @@ int sys_semwait(struct sem_t* s) {
 // Increase the semaphores's counter and unblock the first blocked thread in the semaphore's queue
 int sys_semsignal(struct sem_t* s) {
   // printkf("[sys_semwait] Received s: 0x%p\n", s);
-  if (!sem_ptr_correct(s)) return -EFAULT;
+  if (!sem_ptr_ok(s)) return -EFAULT;
 
   s->count += 1;
   if (list_empty(&s->blocked)) return 0;
@@ -355,7 +356,7 @@ int sys_semsignal(struct sem_t* s) {
 
 // Destroy the semaphore (only the thread that created a semaphore can destroy it)
 int sys_semdestroy(struct sem_t* s) {
-  if (!sem_ptr_correct(s)) return -EFAULT;
+  if (!sem_ptr_ok(s)) return -EFAULT;
   if (s->creator_TID != current()->TID) return -EINVAL;
   
   // unblock all threads
@@ -389,54 +390,15 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   
   /* Copy the parent's task struct to child's */
   copy_data(parent, uchild, sizeof(union task_union));
-  
-  /* new pages dir */
-  // allocate_DIR((struct task_struct*)uchild);
-  
-  
-  page_table_entry *process_PT = get_PT(&uchild->task);
+
+  // parent and child both share directory
   page_table_entry *parent_PT = get_PT(parent);
-  
+  page_table_entry *process_PT = get_PT(&uchild->task);
   process_PT->bits.pbase_addr = parent_PT->bits.pbase_addr;
   
-  
-  int stack_page = PAG_LOG_INIT_DATA+NUM_PAG_DATA; // +1 pq no se solapi amb l'stack del proces pare i "funcioni", un cop vagi s'ha de treure
-  printkf("[KERNEL] parent: 0x%p; new: 0x%p\n", parent, &uchild->stack);
-  printkf("[KERNEL] Searching page from %d\n", &stack_page);
-  int found = 0;
-  // Last page is reserved by sys_fork
-  while (found < N && stack_page < TOTAL_PAGES-1) {
-    if (parent_PT[stack_page].entry == 0) found += 1;
-    else found = 0;
-    stack_page += 1;
-  }
-  // no available consecutive pages, abort
-  if (found < N) return -ENOMEM;
-
-  printkf("[KERNEL] Found pages until %d\n", &stack_page);
-  // set pag to start of region
-  stack_page -= N;
-  printkf("[KERNEL] New pages start %d\n", &stack_page);
-  
-  // region found, alloc pages
-  for (int i = 0; i < N; i++) {
-    int frame = alloc_frame();
-    if (frame > 0) {
-      int page = stack_page+i;
-      printkf("[KERNEL] Assigned page %d to frame %d\n", &page, &frame);
-      set_ss_pag(process_PT, stack_page+i, frame);
-      continue;
-    }
-    
-    // not enough physical pages, abort
-    while (i > 0) {
-      i -= 1;
-      free_frame(get_frame(process_PT, stack_page+i));
-      del_ss_pag(process_PT, stack_page+i);
-    }
-    set_cr3(get_DIR(parent));
-    return -ENOMEM;
-  }
+  // allocate N consecutive pages
+  int stack_page = alloc_pages(&uchild->task, N);
+  if (stack_page < 0) return stack_page;
 
   uchild->task.TID=++global_TID;
   uchild->task.state=ST_READY;
@@ -466,10 +428,30 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   return 0;
 }
 
-int sys_memregget() {
-  return 0;
+// Allocates num_pages pages of physical memory and maps them to a consecutive region in the user address space. 
+// Returns the initial logical address assigned to the region.
+// This memory region is inherited by child processes (fork) and other threads.
+char* sys_memregget(int num_pages) {
+  if (num_pages <= 0) return NULL;
+
+  // TODO: Metadata is written in the first allocated page until other method is found
+  // allocate extra page for metadata
+  int first_page = alloc_pages(current(), num_pages+1);
+  struct page_metadata* metadata = (struct page_metadata*)(long)(first_page << 12);
+  *metadata = new_page_metadata(num_pages+1);
+  // return skipping metadata page
+  return (char*)(long)((first_page+1) << 12);
 }
 
-int sys_memregdel() {
+// This call deletes a previously allocated memory region m, releasing all its resources.
+int sys_memregdel(char* m) {
+  if (m == NULL) return -EFAULT;
+  // TODO: Check if memory region is inside thread shared region size
+  
+  // [m] = { metadata, PAGE_SIZE * metadata->size }
+  struct page_metadata* metadata = (struct page_metadata*)(m - PAGE_SIZE);
+  if (!metadata_ptr_ok(metadata)) return -EFAULT;
+  
+  dealloc_pages(current(), (long)(metadata) >> 12, metadata->size);
   return 0;
 }
