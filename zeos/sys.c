@@ -294,7 +294,7 @@ int sys_getkey(char* b, int timeout) {
   
   if (kbuf_pop(&kbuf, b)) return 0;
   
-  // ordenar llista per timeout (ens deixa com ho tenim pero no li mola)
+  // TODO(fix): La llista de procesos bloquejats per timeout no està ordenada, i només desbloquejeu al primer sense comprovar si cal o no...
   current()->p_stats.blocked_ticks = timeout*TICKS_PER_SECOND;
   update_process_state_rr(current(), &keyboard_blocked);
   sched_next_rr();
