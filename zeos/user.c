@@ -7,16 +7,12 @@ char buff[24];
 
 int pid;
 
-
-DEFINE_QUEUE(charq, char);
-IMPL_QUEUE(charq, char);
-
 void test_keyboard(int block);
 void test_screen(int block);
 void test_threads(int times);
 void test_fork(int times);
 void test_semaphore();
-void test_alloc();
+int test_alloc();
 
 int __attribute__ ((__section__(".text.main"))) main(void) {
   printchar('\n');
@@ -24,12 +20,12 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
   // player: 2
   // enemy: 8
 
-  // test_keyboard(0);
+  // test_keyboard(1);
   // test_screen(0);
   // test_threads(2);
   // test_fork(4);
   // test_semaphore();
-  test_alloc();
+  if (!test_alloc()) exit(1);
 
   println("Finished tests!");
   
@@ -76,8 +72,10 @@ void test_keyboard(int block) {
   int prevtime = -1;
   while (block) {
     char tecla;
-    if (getKey(&tecla, 1 << 30) >= 0) {
+    if (getKey(&tecla, 60) >= 0) {
       printchar(tecla);
+    } else {
+      printchar('.');
     }
   }
 }
@@ -224,13 +222,13 @@ void test_semaphore() {
   while (1);
 }
 
-void test_alloc() {
+int test_alloc() {
   int n = 3;
   printf("[test-alloc] Allocating %d pages...\n", &n);
   char* alloc = memRegGet(n);
   if (alloc == NULL) {
     printf("[test-alloc] Error allocating %d pages: ", &n); perror();
-    exit();
+    return 0;
   }
   alloc[0] = 'H';
   alloc[1] = 'o';
@@ -243,7 +241,30 @@ void test_alloc() {
   printf("[test-alloc] Deallocating pages...\n", &n);
   if (memRegDel(alloc) < 0) {
     printf("[test-alloc] Error deallocating %d pages: ", &n); perror();
-    exit();
+    return 0;
+  }
+
+  printf("[test-alloc] Testing allocation persistent on fork");
+  char* alloc2 = memRegGet(n);
+  alloc2[3] = 'F';
+  alloc2[4] = 'a';
+
+  switch (fork()) {
+    case -1: {
+      printf("[test-alloc] Error on fork: "); perror();
+      return 0;
+    };
+    case 0: {
+      printf("[test-alloc] Checking if children has access to a copy of the allocated pages\n");
+      if (alloc2[3] != 'F') {
+        printf("[test-alloc] Expected alloc[3] = 'F', found %c\n", &alloc2[3]);
+        return 0;
+      }
+      if (alloc2[4] != 'a') {
+        printf("[test-alloc] Expected alloc[3] = 'F', found %c\n", &alloc2[3]);
+        return 0;
+      }
+    }
   }
   
   printf("[test-alloc] Test successful!\n");
