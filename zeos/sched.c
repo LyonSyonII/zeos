@@ -3,6 +3,7 @@
  */
 
 #include "list.h"
+#include <mm_address.h>
 #include <types.h>
 #include <hardware.h>
 #include <segment.h>
@@ -196,6 +197,7 @@ void init_task1(void)
   union task_union *uc = (union task_union*)c;
 
   c->PID=1;
+  c->TID=0;
 
   c->total_quantum=DEFAULT_QUANTUM;
 
@@ -208,6 +210,8 @@ void init_task1(void)
   allocate_DIR(c);
   
   set_user_pages(c);
+  c->stack_start_page = PAG_LOG_INIT_DATA;
+  c->stack_num_pages = NUM_PAG_DATA;
 
   tss.esp0=(DWord)&(uc->stack[KERNEL_STACK_SIZE]);
   setMSR(0x175, 0, (unsigned long)&(uc->stack[KERNEL_STACK_SIZE]));
