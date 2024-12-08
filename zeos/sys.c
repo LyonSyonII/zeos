@@ -261,16 +261,15 @@ int sys_gotoxy(int x, int y) {
   return 0;
 }
 
-//No se si fer-ho que transformi rgb al que tenim?
 int sys_changecolour(int fg, int bg) {
+  if (fg < 0 || bg < 0) return -EINVAL;
+
   screenColor = (bg&0x0F)<<4 | (fg&0x0F);
   return 0;
 }
 
 int sys_clrscr(char *b) {
-  if (access_ok(VERIFY_READ, b, NUM_ROWS*NUM_COLUMNS*sizeof(Word))) { // si el punter es valid
-    copy_from_user(b, (Word*)0xb8000, NUM_COLUMNS*NUM_ROWS*sizeof(Word));
-  } else { // si no default pantalla buida
+  if (b == NULL) {
     Word *screen = (Word*)0xb8000;
     for (int i = 0; i < NUM_ROWS; ++i) {
       for (int j = 0; j < NUM_COLUMNS; ++j) {
@@ -278,7 +277,14 @@ int sys_clrscr(char *b) {
         ++screen;
       }
     }
+    return 0;
   }
+
+  if (!access_ok(VERIFY_READ, b, NUM_ROWS*NUM_COLUMNS*sizeof(Word))) {
+    return -EFAULT;
+  }
+
+  copy_from_user(b, (Word*)0xb8000, NUM_COLUMNS*NUM_ROWS*sizeof(Word));
 
   return 0;
 }
