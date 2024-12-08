@@ -107,7 +107,7 @@ int sys_fork(void)
       return -EAGAIN; 
     }
   }
-
+  
   /* Copy parent's SYSTEM and CODE to child. */
   page_table_entry *parent_PT = get_PT(current());
   for (pag=0; pag<NUM_PAG_KERNEL; pag++)
@@ -124,7 +124,7 @@ int sys_fork(void)
   {
     /* Map one child page to parent's address space. */
     set_ss_pag(parent_PT, temp_logical, get_frame(process_PT, pag));
-    copy_data((void*)(pag<<12), (void*)((temp_logical)<<12), PAGE_SIZE);
+    copy_data((void*)(long)(pag<<12), (void*)(long)((temp_logical)<<12), PAGE_SIZE);
     del_ss_pag(parent_PT, temp_logical);
     /* Deny access to the child's memory space */
     set_cr3(get_DIR(current()));
@@ -207,6 +207,13 @@ void sys_exit()
   {
     free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
     del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
+  }
+
+  // Deallocate the stack of this thread
+  int stack_end_page = current()->stack_start_page + current()->stack_num_pages;
+  for (i = current()->stack_start_page; i < stack_end_page; i++) {
+    free_frame(get_frame(process_PT, i));
+    del_ss_pag(process_PT, i);
   }
   
   /* Free task_struct */
@@ -407,6 +414,8 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   if (stack_page < 0) return stack_page;
 
   uchild->task.TID=++global_TID;
+  uchild->task.stack_num_pages=N;
+  uchild->task.stack_start_page=stack_page;
   uchild->task.state=ST_READY;
   
   // setup user and system stack
