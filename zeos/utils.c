@@ -1,3 +1,5 @@
+#include <io.h>
+#include <sched.h>
 #include <utils.h>
 #include <types.h>
 
@@ -71,11 +73,26 @@ int access_ok(int type, const void * addr, unsigned long size)
   if (addr_fin < addr_ini) return 0; //This looks like an overflow ... deny access
   
   // TODO: Check page for the attribute that indicates that the page can be used (not freed)
-
-  switch(type)
-  {
+  
+  if (type == VERIFY_WRITE) {
+    // Should suppose no support for automodifyable code
+    if (addr_ini < USER_FIRST_PAGE+NUM_PAG_CODE) return 0;
+  } else { 
+    // Read only
+    if (addr_ini < USER_FIRST_PAGE) return 0;
+  }
+  // Common check
+  page_table_entry* PT = get_DIR(current());
+  
+  for (int i = addr_ini; i < addr_fin; i++) {
+    printkf("[access_ok] Checking page: %d\n", &i);
+    if (PT[i].entry == 0) return 0;
+  }
+  
+  // OLD IMPL
+  /*   switch(type) {
     case VERIFY_WRITE:
-      /* Should suppose no support for automodifyable code */
+      // Should suppose no support for automodifyable code
       if ((addr_ini>=USER_FIRST_PAGE+NUM_PAG_CODE)&&
           (addr_fin<=USER_FIRST_PAGE+NUM_PAG_CODE+NUM_PAG_DATA+20)) // TODO: Remove +20 when a solution to thread shared attributes is found
 	  return 1;
@@ -83,8 +100,9 @@ int access_ok(int type, const void * addr, unsigned long size)
       if ((addr_ini>=USER_FIRST_PAGE)&&
   	(addr_fin<=(USER_FIRST_PAGE+NUM_PAG_CODE+NUM_PAG_DATA+20))) // TODO: Remove +20 when a solution to thread shared attributes is found
           return 1;
-  }
-  return 0;
+  } */  
+
+  return 1;
 }
 
 
