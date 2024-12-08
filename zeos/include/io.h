@@ -14,6 +14,10 @@
 #define NUM_COLUMNS 80
 #define NUM_ROWS    25
 
+extern Byte x, y;
+
+extern Byte screenColor;
+
 Byte inb (unsigned short port);
 void printc(char c);
 void printc_xy(Byte x, Byte y, char c);
