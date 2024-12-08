@@ -55,7 +55,7 @@ int sys_getpid()
 }
 
 int global_PID=1000;
-int global_TID=1;
+int global_TID=0;
 
 int ret_from_fork()
 {
@@ -196,33 +196,55 @@ int sys_gettime()
   return zeos_ticks;
 }
 
-void sys_exit()
-{  
-  int i;
-
-  page_table_entry *process_PT = get_PT(current());
-
-  // Deallocate all the propietary physical pages
-  for (i=0; i<NUM_PAG_DATA; i++)
-  {
-    free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
-    del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
-  }
+void thread_exit(struct task_struct* process) {
+  page_table_entry *process_PT = get_PT(process);
 
   // Deallocate the stack of this thread
-  int stack_end_page = current()->stack_start_page + current()->stack_num_pages;
-  for (i = current()->stack_start_page; i < stack_end_page; i++) {
+  int stack_end_page = process->stack_start_page + process->stack_num_pages;
+  printkf("[sys_exit] Freeing pages %d to %d\n", &process->stack_start_page, &stack_end_page);
+  for (int i = process->stack_start_page; i < stack_end_page; i++) {
     free_frame(get_frame(process_PT, i));
     del_ss_pag(process_PT, i);
   }
   
+  process->PID=-1;
+  process->TID=-1;
+
   /* Free task_struct */
-  list_add_tail(&(current()->list), &freequeue);
+  list_add_tail(&process->list, &freequeue);
+}
+
+void sys_exit() {
+  struct task_struct* process = current();
+  printkf("[sys_exit] Exiting process PID = %d; TID = %d;\n", &process->PID, &process->TID);
+  page_table_entry *process_PT = get_PT(process);
+  
+  // If main process, exit all threads with same PID
+  if (process->TID == 0) {
+    struct list_head *pos, *n;
+    list_for_each_safe(pos, n, &readyqueue) {
+      struct task_struct* thread = list_head_to_task_struct(pos);
+      if (thread->PID != process->PID) continue;
+      list_del(&thread->list);
+      thread_exit(thread);
+    }
+  }
+  
+  // Deallocate all the propietary physical pages and free task struct
+  thread_exit(process);
+  sched_next_rr();
+/*   for (int i=0; i<NUM_PAG_DATA; i++) {
+    free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
+    del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
+  }
+  
+  // Free task_struct
+  list_add_tail(&(process->list), &freequeue);
   
   current()->PID=-1;
+  current()->TID=-1; */
   
   /* Restarts execution of the next process */
-  sched_next_rr();
 }
 
 /* System call to force a task switch */
