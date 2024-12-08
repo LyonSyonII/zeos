@@ -9,7 +9,7 @@ int pid;
 
 void test_keyboard(int block);
 void test_screen(int block);
-void test_threads(int times);
+void test_threads(char times);
 void test_fork(int times);
 void test_semaphore();
 int test_alloc();
@@ -22,10 +22,10 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
 
   // test_keyboard(1);
   // test_screen(0);
-  // test_threads(2);
-  // test_fork(4);
+  test_threads(2);
+  test_fork(4);
   // test_semaphore();
-  if (!test_alloc()) exit(1);
+  // if (!test_alloc()) exit(1);
 
   println("Finished tests!");
   
@@ -116,24 +116,36 @@ void test_screen(int block) {
 
 /// Test Thread Function, prints the address of its argument
 void ttf(void* arg) {
-  printf("[test_thread] Thread #%p spawned\n", arg);
-  while (1); // Exit not needed, wrapper is used
-}
+  int thread_id = (long)arg>>4;
+  int stack_size = (long)arg&0xF;
+  int first_page = (long)&arg >> 12;
+  int last_page = first_page + stack_size - 1;
+  char* first_addr = (char*)(long)(first_page << 12);
+  char* last_addr = (char*)(long)(last_page << 12);
 
+  printf("\n[test_thread] Thread #%d spawned with stack size %d\n", &thread_id, &stack_size);
+  // Check that it can access its memory region
+  printf("[test_thread] Test thread #%d accessing pages from %d to %d\n", &thread_id, &first_page, &last_page);
+  volatile char t = *first_addr + *(last_addr - 1);
+  
+  printf("[test_thread] Thread #%d exiting...\n", &thread_id);
+  // Exit not needed, wrapper is used
+}
 /// Tests spawning `times` threads.
-/// THIS FUNCTION NEVER RETURNS
-void test_threads(int times) {
+void test_threads(char times) {
+  if (times < 0) return;
+
   for (int i = 1; i <= times; ++i) {
-    int ret = threadCreateWithStack(ttf, 2, (void*)(long)i);
+    int ret = threadCreateWithStack(ttf, 2, (void*)(long)( (i << 4) | times ));
     if (ret < 0) {
       print("[test_thread] Could not spawn thread: "); perror();
       exit();
     }
-    printf("[test_thread] Created thread #%d\n\n", &i);
+    printf("[test_thread] Created thread #%d\n", &i);
   }
-  
-  // TODO: A wrapper for the main function is needed? How will it free itself?
-  while (1);
+  // Wait for threads to exit
+  wait(200);
+  printf("\n\n");
 }
 
 void test_fork(int times) {
@@ -152,7 +164,7 @@ void test_fork(int times) {
   if (ret == 0) {
     // wait some time to allow for other processes to create
     wait(20);
-    printf("Fork %d exiting\n", &forks);
+    printf("\n[test_fork] Fork %d exiting\n", &forks);
     exit();
   }
   if (forks != 8) {
