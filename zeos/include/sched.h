@@ -25,6 +25,8 @@ struct task_struct {
   enum state_t state;		/* State of the process */
   int total_quantum;		/* Total quantum of the process */
   struct stats p_stats;		/* Process stats */
+  int stack_start_page; /* Page where the stack created with threadCreateWithStack starts */
+  int stack_num_pages; /* Size of the stack created with threadCreateWithStack */
 };
 
 union task_union {
