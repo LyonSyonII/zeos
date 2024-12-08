@@ -22,7 +22,9 @@ void keyboard_unblock_first() {
     list_del(&ts->list);
     list_add(&ts->list, &readyqueue);
     
+    // Treiem el proces actual d'execucio i el posem a la readyqueue
     update_process_state_rr(current(), &readyqueue);
+    // Forcem canvi de proces
     sched_next_rr();
 }
 
