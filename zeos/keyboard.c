@@ -21,8 +21,9 @@ void keyboard_unblock_first() {
     ts->state = ST_RUN;
     list_del(&ts->list);
     list_add(&ts->list, &readyqueue);
+    
+    update_process_state_rr(current(), &readyqueue);
     sched_next_rr();
-    // update_process_state_rr(ts, &readyqueue);
 }
 
 
