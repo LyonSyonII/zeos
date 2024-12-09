@@ -229,6 +229,7 @@ void init_freequeue()
   for (i=0; i<NR_TASKS; i++)
   {
     task[i].task.PID=-1;
+    task[i].task.TID=-1;
     list_add_tail(&(task[i].task.list), &freequeue);
   }
 }
