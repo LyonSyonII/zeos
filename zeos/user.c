@@ -21,10 +21,10 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
 
   // test_keyboard(1);
   // test_screen(0);
-  // test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
-  // test_fork(4);
-  // test_semaphore();
-  // if (!test_alloc()) exit(1);
+  test_fork(4);
+  test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
+  test_semaphore();
+  if (!test_alloc()) exit(1);
 
   println("Finished tests!");
   
@@ -61,12 +61,12 @@ void test_keyboard(int block) {
   int i = 0;
   KBUF_ITER(kbuf, value) {
     if (value != chars[i]) {
-      printf("[test_keyboard] ERROR: Expected '%c', found '%c'\n", &chars[i], &value);
+      printf("[test-keyboard] ERROR: Expected '%c', found '%c'\n", &chars[i], &value);
       exit();
     }
     i += 1;
   }
-  println("[test_keyboard] Test successful!\n");
+  println("[test-keyboard] Test successful!\n");
   
   int prevtime = -1;
   while (block) {
@@ -122,12 +122,12 @@ void ttf(void* arg) {
   char* first_addr = (char*)(long)(first_page << 12);
   char* last_addr = (char*)(long)(last_page << 12);
 
-  printf("\n[test_thread] Thread #%d spawned with stack size %d\n", &thread_id, &stack_size);
+  printf("\n[test-thread] Thread #%d spawned with stack size %d\n", &thread_id, &stack_size);
   // Check that it can access its memory region
-  printf("[test_thread] Test thread #%d accessing pages from %d to %d\n", &thread_id, &first_page, &last_page);
+  printf("[test-thread] Test thread #%d accessing pages from %d to %d\n", &thread_id, &first_page, &last_page);
   volatile char t = *first_addr + *(last_addr - 1);
   
-  printf("[test_thread] Thread #%d exiting...\n", &thread_id);
+  printf("[test-thread] Thread #%d exiting...\n", &thread_id);
   
   while (1) {} // Comment to test wrapper
   // Exit not needed, wrapper is used
@@ -139,23 +139,23 @@ void test_threads(char threads, int terminate) {
   for (int i = 1; i <= threads; ++i) {
     int ret = threadCreateWithStack(ttf, 2, (void*)(long)( (i << 4) | 2 ));
     if (ret < 0) {
-      print("[test_thread] Could not spawn thread: "); perror();
+      print("[test-thread] Could not spawn thread: "); perror();
       exit();
     }
-    printf("[test_thread] Created thread #%d\n", &i);
+    printf("[test-thread] Created thread #%d\n", &i);
   }
   // Wait for threads to exit
   wait(50);
-  printf("\n");
-  exit();
+  printf("[test-thread] Test successful!\n\n\n");
+  if (terminate) exit();
 }
 
 void test_fork(int times) {
   if (times == 0) {
-    println("[test_fork] All tests succeded!\n\n");
+    println("[test-fork] All tests succeded!\n\n");
     return;
   }
-  printf("[test_fork] Starting test #%d\n", &times);
+  printf("[test-fork] Starting test #%d\n", &times);
 
   int forks = 0;
   int ret = 1;
@@ -166,20 +166,20 @@ void test_fork(int times) {
   if (ret == 0) {
     // wait some time to allow for other processes to create
     wait(20);
-    printf("\n[test_fork] Fork %d exiting\n", &forks);
+    printf("\n[test-fork] Fork %d exiting\n", &forks);
     exit();
   }
   if (forks != 8) {
-    printf("[test_fork] Expected 8 processes, found %d\n", &forks);
+    printf("[test-fork] Expected 8 processes, found %d\n", &forks);
     exit();
   }
   if (errno != ENOMEM) {
-    printf("[test_fork] Expected errno of ENOMEM, found %d\n", &errno);
+    printf("[test-fork] Expected errno of ENOMEM, found %d\n", &errno);
     exit();
   }
   // wait some time to allow for other processes to exit
   wait(40);
-  printf("[test_fork] Test #%d, successful!\n\n", &times);
+  printf("[test-fork] Test #%d, successful!\n\n", &times);
 
   test_fork(times-1);
 }
@@ -200,7 +200,7 @@ void stt(struct sem_t* sem) {
 
   printf("[test-semaphore] Thread exited\n");
   
-  while (1);
+  // while (1);
 }
 
 void test_semaphore() {
@@ -222,18 +222,16 @@ void test_semaphore() {
   semWait(sem);
   
   printf("[test-semaphore] I'm continuing, fork result: %d\n", &pid);
-  wait(500);
+  wait(50);
   semSignal(sem);
   
   if (pid == 0) {
     printf("[test-semaphore] Child: wait ended\n", &pid);
     exit();
-  } else {
-    printf("[test-semaphore] Parent: wait ended\n", &pid);
-    semDestroy(sem);
   }
-  
-  while (1);
+  printf("[test-semaphore] Parent: wait ended\n", &pid);
+  semDestroy(sem);
+  printf("[test-semaphore] Test successful!\n\n\n");
 }
 
 int test_alloc() {
@@ -258,11 +256,11 @@ int test_alloc() {
     return 0;
   }
 
-  printf("[test-alloc] Testing allocation persistent on fork");
+  printf("[test-alloc] Testing allocation persistent on fork\n");
   char* alloc2 = memRegGet(n);
   alloc2[3] = 'F';
   alloc2[4] = 'a';
-
+  
   switch (fork()) {
     case -1: {
       printf("[test-alloc] Error on fork: "); perror();
@@ -278,9 +276,14 @@ int test_alloc() {
         printf("[test-alloc] Expected alloc[3] = 'F', found %c\n", &alloc2[3]);
         return 0;
       }
+      memRegDel(alloc2);
+      exit();
+    };
+    default: {
+      yield();
+      memRegDel(alloc2);
+      printf("[test-alloc] Test successful!\n\n\n");
     }
   }
-  
-  printf("[test-alloc] Test successful!\n");
   return 1;
 }
