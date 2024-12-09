@@ -207,6 +207,8 @@ void thread_exit(struct task_struct* process) {
     del_ss_pag(process_PT, i);
   }
   
+  // TODO: Deallocate dynamic pages from memGetReg?
+  
   process->PID=-1;
   process->TID=-1;
 
@@ -232,19 +234,9 @@ void sys_exit() {
   
   // Deallocate all the propietary physical pages and free task struct
   thread_exit(process);
+
+  // Restarts execution of the next process
   sched_next_rr();
-/*   for (int i=0; i<NUM_PAG_DATA; i++) {
-    free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
-    del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
-  }
-  
-  // Free task_struct
-  list_add_tail(&(process->list), &freequeue);
-  
-  current()->PID=-1;
-  current()->TID=-1; */
-  
-  /* Restarts execution of the next process */
 }
 
 /* System call to force a task switch */
@@ -433,8 +425,11 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   
   // allocate N consecutive pages
   int stack_page = alloc_pages(&uchild->task, N);
-  if (stack_page < 0) return stack_page;
-
+  if (stack_page < 0) { 
+    list_add(lhcurrent, &freequeue);
+    return stack_page; 
+  }
+  
   uchild->task.TID=++global_TID;
   uchild->task.stack_num_pages=N;
   uchild->task.stack_start_page=stack_page;
@@ -450,10 +445,6 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   uchild->stack[KERNEL_STACK_SIZE - 5] = (unsigned long)wrapper; // eip
   uchild->stack[KERNEL_STACK_SIZE - 2] = (unsigned long)&user_stack[USER_STACK_SIZE - 3]; // esp
   uchild->task.register_esp = (int)(long)&uchild->stack[KERNEL_STACK_SIZE - 18]; // ebp
-
-  // TODO: Modify kernel structures to account for allocated region (access_ok)
-  // OPTION 1: Create a `struct task_threads protected_task_threads[NR_TASKS+2]`, where common attributes between threads are stored (allocated_size, num_threads)
-  // OPTION 2: Reserve a page accessible from all threads with these attributes
   
   /* Set stats to 0 */
   init_stats(&(uchild->task.p_stats));
@@ -483,7 +474,6 @@ char* sys_memregget(int num_pages) {
 // This call deletes a previously allocated memory region m, releasing all its resources.
 int sys_memregdel(char* m) {
   if (m == NULL) return -EFAULT;
-  // TODO: Check if memory region is inside thread shared region size
   
   // [m] = { metadata, PAGE_SIZE * metadata->size }
   struct page_metadata* metadata = (struct page_metadata*)(m - PAGE_SIZE);
