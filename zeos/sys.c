@@ -140,12 +140,18 @@ int sys_fork(void)
       int frame = alloc_frame();
       // If error, revert process up to memory region that failed
       if (frame < 0) {
+        // Free data frames
+        for (int i = 0; i < NUM_PAG_DATA; i++) free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA + i));
+        // Free extra allocated frames
         struct list_head* element2;
-        list_for_each(element, &current()->allocated_pages_list) {            
-          metadata = list_entry(element, struct page_metadata, list);
+        list_for_each(element2, &current()->allocated_pages_list) {            
+          metadata = list_entry(element2, struct page_metadata, list);
           metadata_page = (long)metadata >> 12;
           for (int j = 0; j < metadata->size; j++) {
-            if (element2 == element && j == i) return -EAGAIN;
+            if (element2 == element && j == i) {
+              list_add(lhcurrent, &freequeue);
+              return -EAGAIN;
+            }
             free_frame(get_frame(process_PT, metadata_page+j));
           }
         }
