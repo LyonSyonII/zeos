@@ -94,6 +94,34 @@ void __itoa(int a, char *b)
   b[i]=0;
 }
 
+// integer to hexadecimal
+void itox(int a, char *b)
+{
+  int i, i1;
+  char c;
+  
+  if (a==0) { b[0]='0'; b[1]=0; return ;}
+  
+  i=0;
+  while (a>0)
+  {
+    b[i]=(a%16)+'0';
+    if (b[i] > '9') {
+      b[i] = b[i] - ('9'+1) + 'A';
+    }
+    a=a/16;
+    i++;
+  }
+  
+  for (i1=0; i1<i/2; i1++)
+  {
+    c=b[i1];
+    b[i1]=b[i-i1-1];
+    b[i-i1-1]=c;
+  }
+  b[i]=0;
+}
+
 void printkln(char* string) {
   printk(string);
   printc('\n');
@@ -129,7 +157,7 @@ void printkptr(const void* ptr) {
     printk("NULL");
     return;
   }
-  printkhex((int)ptr);
+  printkhex((int)(long)ptr);
 }
 
 void printkptrln(const void* ptr) {
@@ -174,8 +202,6 @@ void __printkf(const char* template, const void* args[]) {
 }
 
 void dbg_task(struct task_struct* task) {
-  const int err = -1;
-
   printkf("task {\n\
   PID: %d\n\
   addr: %p\n\
