@@ -27,6 +27,7 @@ struct task_struct {
   struct stats p_stats;		/* Process stats */
   int stack_start_page; /* Page where the stack created with threadCreateWithStack starts */
   int stack_num_pages; /* Size of the stack created with threadCreateWithStack */
+  struct list_head allocated_pages_list; /* List of allocated memory regions */
 };
 
 union task_union {
