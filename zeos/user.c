@@ -8,7 +8,7 @@ int pid;
 
 void test_keyboard(int block);
 void test_screen(int block);
-void test_threads(char times);
+void test_threads(char times, int terminate);
 void test_fork(int times);
 void test_semaphore();
 int test_alloc();
@@ -21,8 +21,8 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
 
   // test_keyboard(1);
   // test_screen(0);
-  test_threads(2);
-  test_fork(4);
+  // test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
+  // test_fork(4);
   // test_semaphore();
   // if (!test_alloc()) exit(1);
 
@@ -128,14 +128,16 @@ void ttf(void* arg) {
   volatile char t = *first_addr + *(last_addr - 1);
   
   printf("[test_thread] Thread #%d exiting...\n", &thread_id);
+  
+  while (1) {} // Comment to test wrapper
   // Exit not needed, wrapper is used
 }
 /// Tests spawning `times` threads.
-void test_threads(char times) {
-  if (times < 0) return;
+void test_threads(char threads, int terminate) {
+  if (threads < 0) return;
 
-  for (int i = 1; i <= times; ++i) {
-    int ret = threadCreateWithStack(ttf, 2, (void*)(long)( (i << 4) | times ));
+  for (int i = 1; i <= threads; ++i) {
+    int ret = threadCreateWithStack(ttf, 2, (void*)(long)( (i << 4) | 2 ));
     if (ret < 0) {
       print("[test_thread] Could not spawn thread: "); perror();
       exit();
@@ -143,8 +145,9 @@ void test_threads(char times) {
     printf("[test_thread] Created thread #%d\n", &i);
   }
   // Wait for threads to exit
-  wait(200);
-  printf("\n\n");
+  wait(50);
+  printf("\n");
+  exit();
 }
 
 void test_fork(int times) {
@@ -279,4 +282,5 @@ int test_alloc() {
   }
   
   printf("[test-alloc] Test successful!\n");
+  return 1;
 }
