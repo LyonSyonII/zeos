@@ -86,7 +86,7 @@ void perror()
 
 
 // Prints the provided buffer
-int print(const char* buffer) {
+int print(char* buffer) {
   return write(STDOUT, buffer, strlen(buffer));
 }
 // Prints the provided character
@@ -107,7 +107,7 @@ int printintln(int i) {
   return written + 1;
 }
 // Prints the provided buffer with a newline at the end
-int println(const char* buffer) {
+int println(char* buffer) {
   int written, err;
   if ((written = print(buffer)) < 0) return written;
   if ((err = printchar('\n')) < 0) return err;
@@ -132,7 +132,7 @@ void printptr(const void* ptr) {
     print("NULL");
     return;
   }
-  printhex((int)ptr);
+  printhex((int)(long)ptr);
 }
 
 void printptrln(void* ptr) {
@@ -140,7 +140,7 @@ void printptrln(void* ptr) {
   printchar('\n');
 }
 
-void __printf(const char* template, const void* args[]) {
+void __printf(char* template, const void* args[]) {
   int i = 0, arg = 0;
   char c;
   while ( (c = template[i]) ) {
