@@ -274,8 +274,9 @@ unsigned int get_frame (page_table_entry *PT, unsigned int logical_page){
 
 struct page_metadata new_page_metadata(unsigned int size) {
   return (struct page_metadata){
-    .marker = 0xDEADBEEF,
-    size
+    .marker = METADATA_MARKER,
+    size,
+    .marker2 = METADATA_MARKER
   };
 }
 
@@ -284,7 +285,7 @@ struct page_metadata new_page_metadata(unsigned int size) {
 // Returns the first allocated page, or a negative value in case of error.
 int alloc_pages(struct task_struct *task, int N) {
   page_table_entry* process_PT = get_PT(task);
-
+  
   int stack_page = PAG_LOG_INIT_DATA+NUM_PAG_DATA;
   printkf("[KERNEL] Searching page from %d\n", &stack_page);
 
