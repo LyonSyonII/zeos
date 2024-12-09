@@ -129,9 +129,40 @@ int sys_fork(void)
     /* Deny access to the child's memory space */
     set_cr3(get_DIR(current()));
   }
-  // TODO: Copy parent's allocated pages too (memRegGet description)
-  // set_cr3(get_DIR(current()));
   
+  // Copy parent's allocated pages to child
+  struct list_head* element;
+  list_for_each(element, &current()->allocated_pages_list) {
+    struct page_metadata* metadata = list_entry(element, struct page_metadata, list);
+    unsigned int metadata_page = (long)metadata >> 12;
+    
+    for (int i = 0; i < metadata->size; i++) {
+      int frame = alloc_frame();
+      // If error, revert process up to memory region that failed
+      if (frame < 0) {
+        struct list_head* element2;
+        list_for_each(element, &current()->allocated_pages_list) {            
+          metadata = list_entry(element, struct page_metadata, list);
+          metadata_page = (long)metadata >> 12;
+          for (int j = 0; j < metadata->size; j++) {
+            if (element2 == element && j == i) return -EAGAIN;
+            free_frame(get_frame(process_PT, metadata_page+j));
+          }
+        }
+      }
+
+      int page = metadata_page+i;
+      printkf("[sys_fork] Copying page %d\n", &page);
+
+      set_ss_pag(process_PT, page, frame);
+      set_ss_pag(parent_PT, temp_logical, frame);
+      copy_data((void*)(long)(page<<12), (void*)(long)((temp_logical)<<12), PAGE_SIZE);
+      del_ss_pag(parent_PT, temp_logical);
+      /* Deny access to the child's memory space */
+      set_cr3(get_DIR(current()));
+    }
+  }
+
   uchild->task.PID=++global_PID;
   uchild->task.state=ST_READY;
 
@@ -469,6 +500,8 @@ char* sys_memregget(int num_pages) {
   int first_page = alloc_pages(current(), num_pages+1);
   struct page_metadata* metadata = (struct page_metadata*)(long)(first_page << 12);
   *metadata = new_page_metadata(num_pages+1);
+  
+  list_add_tail(&metadata->list, &current()->allocated_pages_list);
   // return skipping metadata page
   return (char*)(long)((first_page+1) << 12);
 }
@@ -481,6 +514,7 @@ int sys_memregdel(char* m) {
   struct page_metadata* metadata = (struct page_metadata*)(m - PAGE_SIZE);
   if (!metadata_ptr_ok(metadata)) return -EFAULT;
   
+  list_del(&metadata->list);
   dealloc_pages(current(), (long)(metadata) >> 12, metadata->size);
   return 0;
 }
