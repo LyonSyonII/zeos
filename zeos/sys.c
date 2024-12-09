@@ -201,6 +201,7 @@ void thread_exit(struct task_struct* process) {
 
   // Deallocate the stack of this thread
   int stack_end_page = process->stack_start_page + process->stack_num_pages;
+  printkf("[sys_exit] Exiting thread PID = %d; TID = %d;\n", &process->PID, &process->TID);
   printkf("[sys_exit] Freeing pages %d to %d\n", &process->stack_start_page, &stack_end_page);
   for (int i = process->stack_start_page; i < stack_end_page; i++) {
     free_frame(get_frame(process_PT, i));
@@ -219,16 +220,17 @@ void thread_exit(struct task_struct* process) {
 void sys_exit() {
   struct task_struct* process = current();
   printkf("[sys_exit] Exiting process PID = %d; TID = %d;\n", &process->PID, &process->TID);
-  page_table_entry *process_PT = get_PT(process);
+  //page_table_entry *process_PT = get_PT(process);
   
   // If main process, exit all threads with same PID
   if (process->TID == 0) {
-    struct list_head *pos, *n;
-    list_for_each_safe(pos, n, &readyqueue) {
-      struct task_struct* thread = list_head_to_task_struct(pos);
-      if (thread->PID != process->PID) continue;
-      list_del(&thread->list);
-      thread_exit(thread);
+    // Iterate over all tasks, so even if a thread is blocked it's deleted correctly
+    // First two (protected, idle) and last (protected) are reserved
+    for (int i = 2; i < NR_TASKS-1; i++) {
+      union task_union* thread = &protected_tasks[i];
+      if (thread->task.PID != process->PID || thread->task.TID == 0) continue;
+      list_del(&thread->task.list); // must be in freequeue or other list
+      thread_exit(&thread->task);
     }
   }
   
