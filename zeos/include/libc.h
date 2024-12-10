@@ -37,7 +37,7 @@ int getKey(char* b, int timeout);
 
 int gotoXY(int x, int y);
 
-int changeColour(int fg, int bg);
+int changeColor(int fg, int bg);
 
 int clrscr(char* b);
 

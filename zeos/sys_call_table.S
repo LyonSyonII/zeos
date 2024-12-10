@@ -8,7 +8,7 @@ ENTRY (sys_call_table)
 	.long sys_threadcreatewithstack	//3
 	.long sys_write		//4
 	.long sys_gotoxy	//5
-	.long sys_changecolour	//6
+	.long sys_changecolor	//6
 	.long sys_clrscr	//7
 	.long sys_ni_syscall	//8
 	.long sys_ni_syscall	//9
