@@ -153,6 +153,7 @@ int sys_fork(void)
               return -EAGAIN;
             }
             free_frame(get_frame(process_PT, metadata_page+j));
+            del_ss_pag(process_PT, metadata_page+j);
           }
         }
       }
@@ -240,12 +241,24 @@ void thread_exit(struct task_struct* process) {
   int stack_end_page = process->stack_start_page + process->stack_num_pages;
   printkf("[sys_exit] Exiting thread PID = %d; TID = %d;\n", &process->PID, &process->TID);
   printkf("[sys_exit] Freeing pages %d to %d\n", &process->stack_start_page, &stack_end_page);
+
+  // Deallocate stack
   for (int i = process->stack_start_page; i < stack_end_page; i++) {
     free_frame(get_frame(process_PT, i));
     del_ss_pag(process_PT, i);
   }
-  
-  // TODO: Deallocate dynamic pages from memGetReg?
+  // Deallocate dynamic pages
+  struct list_head* element;
+  list_for_each(element, &current()->allocated_pages_list) {
+    struct page_metadata* metadata = list_entry(element, struct page_metadata, list);
+    int start_page = (long)&metadata >> 12;
+    int end_page = start_page + metadata->size;
+    printkf("[sys_exit] Freeing pages %d to %d\n", &start_page, &end_page);
+    for (int i = start_page; i < end_page; i++) {
+      free_frame(get_frame(process_PT, i));
+      del_ss_pag(process_PT, i);
+    }
+  }
   
   process->PID=-1;
   process->TID=-1;

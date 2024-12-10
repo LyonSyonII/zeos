@@ -53,8 +53,8 @@ ENTRY(threadCreateWithStackWrapper)
 	call exit
 	ret
 
-/* int threadCreateWithStack(void (*function)(void *arg), int N, void *parameter) */
-/* int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *parameter, void* wrapper) */
+/* int threadCreateWithStack(void (*function)(void* arg), int N, void* parameter) */
+/* int sys_threadCreateWithStack(void (*function)(void* arg), int N, void* parameter, void* wrapper) */
 ENTRY(threadCreateWithStack)
 	pushl %ebp
 	movl %esp, %ebp
