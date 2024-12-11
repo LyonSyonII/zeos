@@ -49,7 +49,7 @@ struct page_metadata {
 };
 struct page_metadata new_page_metadata(unsigned int size);
 
-#define METADATA_MARKER 0xDEADBEEF
+#define METADATA_MARKER 0xDEADBED
 #define metadata_ptr_ok(metadata) (metadata->marker == METADATA_MARKER && metadata->marker2 == METADATA_MARKER)
 
 int alloc_pages(struct task_struct *task, int N);
