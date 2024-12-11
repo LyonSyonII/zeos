@@ -252,7 +252,7 @@ void thread_exit(struct task_struct* process) {
     int start_page = (long)metadata >> 12;
     printkf("[sys_exit] Freeing dynamic pages from %d", &start_page);
     int end_page = start_page + metadata->size;
-    printkf("to %d\n", &start_page, &end_page);
+    printkf(" to %d\n",&end_page);
     if (metadata->marker != METADATA_MARKER) break;
     
     dealloc_pages(process, start_page, metadata->size);

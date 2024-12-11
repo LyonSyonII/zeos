@@ -275,14 +275,17 @@ int test_alloc() {
         printf("[test-alloc] Expected alloc[4] = 'a', found %c\n", &alloc2[4]);
         return 0;
       }
+      alloc2[5] = '\0';
+      printf("[test-alloc] Printing child's string: %s\n", &alloc2[3]);
       printf("[test-alloc] Deallocating child pages\n");
       memRegDel(alloc2);
       exit();
     };
     default: {
-      yield();
+      // yield();
       printf("[test-alloc] Deallocating parent pages\n");
       memRegDel(alloc2);
+      exit();
       printf("[test-alloc] Test successful!\n\n\n");
     }
   }
