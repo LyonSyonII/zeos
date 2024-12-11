@@ -2,9 +2,12 @@
 #include <libc.h>
 #include <queue.h>
 
+#define exit() exit(1)
+
 char buff[24];
 
 int pid;
+
 
 void test_keyboard(int block);
 void test_screen(int block);
@@ -18,14 +21,15 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
   // player: 2
   // enemy: 8
 
-  // test_keyboard(1);
+  // test_keyboard(0);
   // test_screen(0);
-  // test_fork(4);
-  // test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
-  // test_semaphore();
-  if (!test_alloc()) exit(1);
+  test_fork(4);
+  test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
+  test_semaphore();
+  if (!test_alloc()) exit();
 
-  println("Finished tests!");
+  println("Finished tests!\n\n");
+  exit();
   
   while (1);
 }
@@ -116,27 +120,32 @@ void test_screen(int block) {
 void ttf(void* arg) {
   int thread_id = (long)arg>>4;
   int stack_size = (long)arg&0xF;
-  int first_page = (long)&arg >> 12;
+  int first_page = ((long)&arg >> 12) - stack_size + 1;
   int last_page = first_page + stack_size - 1;
   char* first_addr = (char*)(long)(first_page << 12);
-  char* last_addr = (char*)(long)(last_page << 12);
 
   printf("\n[test-thread] Thread #%d spawned with stack size %d\n", &thread_id, &stack_size);
   // Check that it can access its memory region
   printf("[test-thread] Test thread #%d accessing pages from %d to %d\n", &thread_id, &first_page, &last_page);
-  volatile char t = *first_addr + *(last_addr - 1);
-  
+  int t = 0;
+  for (int i = 0; i < stack_size; i++) {
+    t += *(1024 * i + first_addr);        // first address
+    t += *(1024 * i + first_addr + 1023); // last address
+  }
+  printf("[test-thread] Accessed result is: %d\n", &t);
   printf("[test-thread] Thread #%d exiting...\n", &thread_id);
   
-  while (1) {} // Comment to test wrapper
+  // while (1) {} // Comment to test wrapper
   // Exit not needed, wrapper is used
 }
 /// Tests spawning `times` threads.
 void test_threads(char threads, int terminate) {
   if (threads < 0) return;
+  
+  int stack_size = 5;
 
   for (int i = 1; i <= threads; ++i) {
-    int ret = threadCreateWithStack(ttf, 2, (void*)(long)( (i << 4) | 2 ));
+    int ret = threadCreateWithStack(ttf, stack_size, (void*)(long)((i << 4) | stack_size));
     if (ret < 0) {
       print("[test-thread] Could not spawn thread: "); perror();
       exit();
@@ -177,7 +186,8 @@ void test_fork(int times) {
     exit();
   }
   // wait some time to allow for other processes to exit
-  wait(40);
+  yield();
+  wait(80);
   printf("[test-fork] Test #%d, successful!\n\n", &times);
 
   test_fork(times-1);
@@ -259,6 +269,9 @@ int test_alloc() {
   char* alloc2 = memRegGet(n);
   alloc2[3] = 'F';
   alloc2[4] = 'a';
+  char* alloc3 = memRegGet(n);
+  alloc3[93] = 'R';
+  alloc3[94] = 'e';
   
   switch (fork()) {
     case -1: {
@@ -282,10 +295,9 @@ int test_alloc() {
       exit();
     };
     default: {
-      // yield();               // uncomment to test exiting before child
+      yield();               // uncomment to test exiting before child
       printf("[test-alloc] Deallocating parent pages\n");
-      // memRegDel(alloc2);     // uncomment to test `exit()` not deallocating pages already freed
-      exit();                   
+      memRegDel(alloc2);     // uncomment to test `exit()` not deallocating pages already freed           
       printf("[test-alloc] Test successful!\n\n\n");
     }
   }

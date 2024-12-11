@@ -131,25 +131,37 @@ int sys_fork(void)
   }
   
   // Copy parent's allocated pages to child
+  // uchild->task.allocated_pages_list = current()->allocated_pages_list;
   INIT_LIST_HEAD(&uchild->task.allocated_pages_list);
-  struct list_head* element;
-  list_for_each(element, &current()->allocated_pages_list) {
-    struct page_metadata* metadata =
-        list_entry(element, struct page_metadata, list);
+  struct list_head* parent_allocated_pages_list = &current()->allocated_pages_list;
+  struct list_head* element, *n;
+  list_for_each(element, parent_allocated_pages_list) {
+    struct page_metadata* metadata = list_entry(element, struct page_metadata, list);
     unsigned int metadata_page = (long)metadata >> 12;
 
     for (int i = 0; i < metadata->size; i++) {
       int frame = alloc_frame();
       if (frame > 0) {
         int page = metadata_page + i;
-        printkf("[sys_fork] Copying page %d\n", &page);
+        printkf("[sys_fork] Copying page %d; metadata %p -> %p\n", &page, element->prev, element);
 
         set_ss_pag(process_PT, page, frame);
         set_ss_pag(parent_PT, temp_logical, frame);
-
+        
         struct page_metadata* target_metadata = (void*)(long)(temp_logical << 12);
         copy_data((void*)(long)(page << 12), target_metadata, PAGE_SIZE);
-        list_add_tail(&target_metadata->list,&uchild->task.allocated_pages_list);
+        
+        // Corregir primera entrada de la llista del fill, assignant el punter a l'adreça de l'atribut del task_struct
+        // Si no es corregeix la llista continuara utilitzant l'adreça del pare, i donara errors
+        if (i == 0 && element == parent_allocated_pages_list->next) {
+          uchild->task.allocated_pages_list.prev = parent_allocated_pages_list->prev;
+          uchild->task.allocated_pages_list.next = parent_allocated_pages_list->next;
+          target_metadata->list.prev = &uchild->task.allocated_pages_list;
+        }
+        // Corregir ultima entrada de la llista del fill, assignant el punter a l'adreça de l'atribut del task_struct
+        if (i == 0 && element == parent_allocated_pages_list->prev) {
+          target_metadata->list.next = &uchild->task.allocated_pages_list;
+        }
 
         del_ss_pag(parent_PT, temp_logical);
         /* Deny access to the child's memory space */
@@ -157,30 +169,30 @@ int sys_fork(void)
       }
       // If error, revert process up to memory region that failed
       else {
+        // Dealloc task_struct
+        list_add_tail(lhcurrent, &freequeue);
         // Free data frames
-        for (int i = 0; i < NUM_PAG_DATA; i++)
-          free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA + i));
+        dealloc_pages(&uchild->task, PAG_LOG_INIT_DATA, NUM_PAG_DATA, 0);
         // Free extra allocated frames
         struct list_head* element2;
-        list_for_each(element2, &current()->allocated_pages_list) {
+        list_for_each(element2, parent_allocated_pages_list) {
           metadata = list_entry(element2, struct page_metadata, list);
           metadata_page = (long)metadata >> 12;
-          for (int j = 0; j < metadata->size; j++) {
-            if (element2 == element && j == i) {
-              list_add(lhcurrent, &freequeue);
-              return -EAGAIN;
-            }
-            free_frame(get_frame(process_PT, metadata_page + j));
-            del_ss_pag(process_PT, metadata_page + j);
+          // If end reached, dealloc up to page that failed and return
+          if (element2 == element) { 
+            dealloc_pages(&uchild->task, metadata_page, i, 1);
+            return -EAGAIN;
+          } else { 
+            dealloc_pages(&uchild->task, metadata_page, metadata->size, 0);
           }
         }
       }
     }
   }
 
+  // volatile int* a = 0; *a;
+  
   uchild->task.PID=++global_PID;
-  uchild->task.state=ST_READY;
-  uchild->task.allocated_pages_list = current()->allocated_pages_list;
 
   int register_ebp;		/* frame pointer */
   /* Map Parent's ebp to child's stack */
@@ -245,36 +257,32 @@ int sys_gettime()
 
 void thread_exit(struct task_struct* process) {
   page_table_entry *process_PT = get_PT(process);
-
+  
   // Deallocate the stack of this thread
-  int stack_end_page = process->stack_start_page + process->stack_num_pages;
+  int stack_end_page = process->stack_start_page + process->stack_num_pages - 1;
   printkf("[sys_exit] Exiting thread PID = %d; TID = %d;\n", &process->PID, &process->TID);
   
   // Deallocate dynamic pages
+  {
+    int list_first_dir = (long)(&process->allocated_pages_list.next) >> 12;
+    printkf("[sys_exit] Accessing list %d %p\n", &list_first_dir, process->allocated_pages_list.prev);
+  }
   struct list_head *element, *n;
-  printkf("[sys_exit] List: %p %p\n", process->allocated_pages_list.next, process->allocated_pages_list.prev);
   list_for_each_safe(element, n, &process->allocated_pages_list) {
-    printkf("[sys_exit] Going to first element of allocated list\n");
     struct page_metadata* metadata = list_entry(element, struct page_metadata, list);
-
     int start_page = (long)metadata >> 12;
-    printkf("[sys_exit] Freeing dynamic pages from %d", &start_page);
-    int end_page = start_page + metadata->size;
-    printkf(" to %d\n",&end_page);
-    dealloc_pages(process, start_page, metadata->size);
+    int end_page = start_page + metadata->size - 1;
+    printkf("[sys_exit] Freeing dynamic pages from %d to %d\n", &start_page, &end_page);
+    dealloc_pages(process, start_page, metadata->size, 0);
   }
   
-  printkf("[sys_exit] Freeing pages %d to %d\n", &process->stack_start_page, &stack_end_page);
   // Deallocate stack
-  for (int i = process->stack_start_page; i < stack_end_page; i++) {
-    free_frame(get_frame(process_PT, i));
-    del_ss_pag(process_PT, i);
-  }
-  set_cr3(get_DIR(process));
+  printkf("[sys_exit] Freeing stack pages %d to %d\n", &process->stack_start_page, &stack_end_page);
+  dealloc_pages(process, process->stack_start_page, process->stack_num_pages, 1);
   
   process->PID=-1;
   process->TID=-1;
-
+  
   /* Free task_struct */
   list_add_tail(&process->list, &freequeue);
 }
@@ -543,6 +551,6 @@ int sys_memregdel(char* m) {
   if (!metadata_ptr_ok(metadata)) return -EFAULT;
   
   list_del(&metadata->list);
-  dealloc_pages(current(), (long)(metadata) >> 12, metadata->size);
+  dealloc_pages(current(), (long)(metadata) >> 12, metadata->size, 1);
   return 0;
 }
