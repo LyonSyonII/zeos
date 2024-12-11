@@ -64,7 +64,7 @@ ENTRY(threadCreateWithStack)
 	movl 8(%ebp), %ebx
 	movl 12(%ebp), %ecx
 	movl 16(%ebp), %edx
-	movl $threadCreateWithStackWrapper, %esi // move wrapper address to last argument
+	movl $threadCreateWithStackWrapper, %esi // move wrapper address to last argument // potser es refereix a aixo amb que no es correcte la interfaz?
 
 	movl $3, %eax
 	call syscall_sysenter
@@ -106,8 +106,8 @@ ENTRY(gotoXY)
 	popl %ebp
 	ret
 
-/* int changeColour(int fg, int bg) */
-ENTRY(changeColour)
+/* int changeColor(int fg, int bg) */
+ENTRY(changeColor)
 	pushl %ebp
 	movl %esp, %ebp
 	pushl %ebx

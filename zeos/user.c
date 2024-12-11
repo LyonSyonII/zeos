@@ -103,7 +103,7 @@ void test_screen(int block) {
 
     printchar('X'); // Test gotoXY
     gotoXY(x, y++);
-    changeColour(color, color>>4); // Test colours
+    changeColor(color, color>>4); // Test colors
     ++color;
     if (y >= 25) {
       y = 0;

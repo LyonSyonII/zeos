@@ -329,18 +329,14 @@ int sys_get_stats(int pid, struct stats *st)
 
 // Si estem fora del rang en alguna coordenada canviarem el valor a la coordenada valida més proxima
 int sys_gotoxy(int x, int y) {
-  if (x >= NUM_COLUMNS) x = NUM_COLUMNS - 1;
-  else if (x < 0) x = 0;
-
-  if (y >= NUM_ROWS) y = NUM_ROWS - 1;
-  else if (y < 0) y = 0;
+  if (x >= NUM_COLUMNS || x < 0 || y >= NUM_ROWS || y < 0) return -EINVAL;
 
   setCursor(x, y);
 
   return 0;
 }
 
-int sys_changecolour(int fg, int bg) {
+int sys_changecolor(int fg, int bg) {
   if (fg < 0 || bg < 0) return -EINVAL;
 
   screenColor = (bg&0x0F)<<4 | (fg&0x0F);
@@ -496,7 +492,7 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   
   // setup user and system stack
   unsigned long* user_stack = (unsigned long*)(long)(stack_page << 12);
-  int USER_STACK_SIZE = N * 1024;
+  unsigned long USER_STACK_SIZE = N * 1024;
   user_stack[USER_STACK_SIZE - 3] = 0; // return address will never be reached
   user_stack[USER_STACK_SIZE - 2] = (unsigned long)function;
   user_stack[USER_STACK_SIZE - 1] = (unsigned long)parameter;  
