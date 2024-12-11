@@ -276,7 +276,8 @@ struct page_metadata new_page_metadata(unsigned int size) {
   return (struct page_metadata){
     .marker = METADATA_MARKER,
     size,
-    .marker2 = METADATA_MARKER
+    .marker2 = METADATA_MARKER,
+    .list = 0
   };
 }
 
@@ -307,16 +308,15 @@ int alloc_pages(struct task_struct *task, int N) {
   // region found, alloc pages
   for (int i = 0; i < N; i++) {
     int frame = alloc_frame();
-    if (frame > 0) {
-      int page = stack_page+i;
-      printkf("[KERNEL] Assigned page %d to frame %d\n", &page, &frame);
-      set_ss_pag(process_PT, stack_page+i, frame);
-      continue;
+    if (frame < 0) {
+      // not enough physical pages, abort
+      dealloc_pages(task, stack_page, i, 1);
+      return -ENOMEM;
     }
-    
-    // not enough physical pages, abort
-    dealloc_pages(task, stack_page, i);
-    return -ENOMEM;
+      
+    int page = stack_page+i;
+    printkf("[KERNEL] Assigned page %d to frame %d\n", &page, &frame);
+    set_ss_pag(process_PT, stack_page+i, frame);
   }
 
   return stack_page;
@@ -324,7 +324,7 @@ int alloc_pages(struct task_struct *task, int N) {
 
 // Deallocates `N` consecutive pages starting from `start_page`.
 // The caller is responsible to check if the `start_page..N` region is valid.
-void dealloc_pages(struct task_struct *task, int start_page, int N) {
+void dealloc_pages(struct task_struct *task, int start_page, int N, int flush_tlb) {
   page_table_entry* PT = get_PT(task);
   for (int page = start_page; page < start_page+N; ++page) {
     free_frame(get_frame(PT, page));
@@ -332,5 +332,5 @@ void dealloc_pages(struct task_struct *task, int start_page, int N) {
     printkf("[KERNEL] Deallocating page %d\n", &page);
   }
 
-  set_cr3(get_DIR(task));
+  if (flush_tlb) set_cr3(get_DIR(task));
 }

@@ -53,6 +53,6 @@ struct page_metadata new_page_metadata(unsigned int size);
 #define metadata_ptr_ok(metadata) (metadata->marker == METADATA_MARKER && metadata->marker2 == METADATA_MARKER)
 
 int alloc_pages(struct task_struct *task, int N);
-void dealloc_pages(struct task_struct *task, int start_page, int N);
+void dealloc_pages(struct task_struct *task, int start_page, int N, int flush_tlb);
 
 #endif  /* __MM_H__ */
