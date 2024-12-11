@@ -134,6 +134,8 @@ int sys_fork(void)
   struct list_head* element;
   list_for_each(element, &current()->allocated_pages_list) {
     struct page_metadata* metadata = list_entry(element, struct page_metadata, list);
+    if (metadata->marker != METADATA_MARKER) break;
+
     unsigned int metadata_page = (long)metadata >> 12;
     
     for (int i = 0; i < metadata->size; i++) {
@@ -163,7 +165,7 @@ int sys_fork(void)
 
       set_ss_pag(process_PT, page, frame);
       set_ss_pag(parent_PT, temp_logical, frame);
-      copy_data((void*)(long)(page<<12), (void*)(long)((temp_logical)<<12), PAGE_SIZE);
+      copy_data((void*)(long)(page<<12), (void*)(long)(temp_logical<<12), PAGE_SIZE);
       del_ss_pag(parent_PT, temp_logical);
       /* Deny access to the child's memory space */
       set_cr3(get_DIR(current()));
@@ -172,6 +174,7 @@ int sys_fork(void)
 
   uchild->task.PID=++global_PID;
   uchild->task.state=ST_READY;
+  uchild->task.allocated_pages_list = current()->allocated_pages_list;
 
   int register_ebp;		/* frame pointer */
   /* Map Parent's ebp to child's stack */
@@ -179,7 +182,7 @@ int sys_fork(void)
   register_ebp=(register_ebp - (int)current()) + (int)(uchild);
 
   uchild->task.register_esp=register_ebp + sizeof(DWord);
-
+  
   DWord temp_ebp=*(DWord*)register_ebp;
   /* Prepare child stack for context switch */
   uchild->task.register_esp-=sizeof(DWord);
@@ -240,25 +243,28 @@ void thread_exit(struct task_struct* process) {
   // Deallocate the stack of this thread
   int stack_end_page = process->stack_start_page + process->stack_num_pages;
   printkf("[sys_exit] Exiting thread PID = %d; TID = %d;\n", &process->PID, &process->TID);
+  
+  // Deallocate dynamic pages
+  struct list_head *element, *n;
+  list_for_each_safe(element, n, &process->allocated_pages_list) {
+    printkf("[sys_exit] Going to first element of allocated list\n");
+    struct page_metadata* metadata = list_entry(element, struct page_metadata, list);
+    int start_page = (long)metadata >> 12;
+    printkf("[sys_exit] Freeing dynamic pages from %d", &start_page);
+    int end_page = start_page + metadata->size;
+    printkf("to %d\n", &start_page, &end_page);
+    if (metadata->marker != METADATA_MARKER) break;
+    
+    dealloc_pages(process, start_page, metadata->size);
+  }
+  
   printkf("[sys_exit] Freeing pages %d to %d\n", &process->stack_start_page, &stack_end_page);
-
   // Deallocate stack
   for (int i = process->stack_start_page; i < stack_end_page; i++) {
     free_frame(get_frame(process_PT, i));
     del_ss_pag(process_PT, i);
   }
-  // Deallocate dynamic pages
-  struct list_head* element;
-  list_for_each(element, &current()->allocated_pages_list) {
-    struct page_metadata* metadata = list_entry(element, struct page_metadata, list);
-    int start_page = (long)&metadata >> 12;
-    int end_page = start_page + metadata->size;
-    printkf("[sys_exit] Freeing pages %d to %d\n", &start_page, &end_page);
-    for (int i = start_page; i < end_page; i++) {
-      free_frame(get_frame(process_PT, i));
-      del_ss_pag(process_PT, i);
-    }
-  }
+  set_cr3(get_DIR(process));
   
   process->PID=-1;
   process->TID=-1;
@@ -486,6 +492,7 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   uchild->task.stack_num_pages=N;
   uchild->task.stack_start_page=stack_page;
   uchild->task.state=ST_READY;
+  INIT_LIST_HEAD(&uchild->task.allocated_pages_list);
   
   // setup user and system stack
   unsigned long* user_stack = (unsigned long*)(long)(stack_page << 12);

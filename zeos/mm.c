@@ -315,12 +315,7 @@ int alloc_pages(struct task_struct *task, int N) {
     }
     
     // not enough physical pages, abort
-    while (i > 0) {
-      i -= 1;
-      free_frame(get_frame(process_PT, stack_page+i));
-      del_ss_pag(process_PT, stack_page+i);
-    }
-    set_cr3(get_DIR(task));
+    dealloc_pages(task, stack_page, i);
     return -ENOMEM;
   }
 

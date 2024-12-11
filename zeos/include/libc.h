@@ -41,7 +41,7 @@ int changeColour(int fg, int bg);
 
 int clrscr(char* b);
 
-int threadCreateWithStack(void (*function)(void *arg), int N, void *parameter);
+int threadCreateWithStack(void (*function)(void* arg), int N, void* parameter);
 
 // Create an initial semaphore with an initial counter of initial_value; 
 // 
@@ -69,7 +69,7 @@ void RESTORE_REGS(void);
 // custom
 
 // Prints the provided buffer.
-int print(const char* buffer);
+int print(char* buffer);
 // Prints the provided character.
 int printchar(char c);
 // Prints the provided integer.
@@ -77,9 +77,33 @@ int printint(int i);
 // Prints the provided integer with a newline at the end.
 int printintln(int i);
 // Prints the provided buffer with a newline at the end.
-int println(const char* buffer);
+int println(char* buffer);
 // Supports: `%d`, `%p`, `%x`, `%s`.
 #define printf(template, ...) __printf(template, (const void*[]) { __VA_ARGS__ })
-void __printf(const char* template, const void* args[]);
+void __printf(char* template, const void* args[]);
+
+
+// Macros per fer el printf sense referencies
+#define CAST_1(a1) (void *)(a1)
+#define CAST_2(a1, a2) CAST_1(a1), (void *)(a2)
+#define CAST_3(a1, a2, a3) CAST_2(a1, a2), (void *)(a3)
+#define CAST_4(a1, a2, a3, a4) CAST_3(a1, a2, a3), (void *)(a4)
+#define CAST_5(a1, a2, a3, a4, a5) CAST_4(a1, a2, a3, a4), (void *)(a5)
+// Extend up to CAST_10 as needed
+
+// Step 2: Macro to count the number of arguments (up to 10)
+#define GET_10TH_ARG(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10, N, ...) N
+#define COUNT_ARGS(...) GET_10TH_ARG(__VA_ARGS__,10,9,8,7,6,5,4,3,2,1,0)
+
+// Step 3: Macro concatenation helpers
+#define CONCATENATE(arg1, arg2)   CONCATENATE1(arg1, arg2)
+#define CONCATENATE1(arg1, arg2)  arg1##arg2
+
+#define SELECT_CAST_MACRO(count) CONCATENATE(CAST_, count)
+
+// Step 4: Final CREATE_ARRAY macro
+#define CREATE_ARRAY(...) \
+    (void *[]){ SELECT_CAST_MACRO(COUNT_ARGS(__VA_ARGS__))(__VA_ARGS__) }
+
 
 #endif  /* __LIBC_H__ */

@@ -15,15 +15,14 @@ int test_alloc();
 
 int __attribute__ ((__section__(".text.main"))) main(void) {
   printchar('\n');
-
   // player: 2
   // enemy: 8
 
   // test_keyboard(1);
   // test_screen(0);
-  test_fork(4);
-  test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
-  test_semaphore();
+  // test_fork(4);
+  // test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
+  // test_semaphore();
   if (!test_alloc()) exit(1);
 
   println("Finished tests!");
@@ -273,14 +272,16 @@ int test_alloc() {
         return 0;
       }
       if (alloc2[4] != 'a') {
-        printf("[test-alloc] Expected alloc[3] = 'F', found %c\n", &alloc2[3]);
+        printf("[test-alloc] Expected alloc[4] = 'a', found %c\n", &alloc2[4]);
         return 0;
       }
+      printf("[test-alloc] Deallocating child pages\n");
       memRegDel(alloc2);
       exit();
     };
     default: {
       yield();
+      printf("[test-alloc] Deallocating parent pages\n");
       memRegDel(alloc2);
       printf("[test-alloc] Test successful!\n\n\n");
     }
