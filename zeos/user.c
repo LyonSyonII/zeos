@@ -278,14 +278,14 @@ int test_alloc() {
       alloc2[5] = '\0';
       printf("[test-alloc] Printing child's string: %s\n", &alloc2[3]);
       printf("[test-alloc] Deallocating child pages\n");
-      memRegDel(alloc2);
+      memRegDel(alloc2);      // comment to test `exit()` deallocating pages
       exit();
     };
     default: {
-      // yield();
+      // yield();               // uncomment to test exiting before child
       printf("[test-alloc] Deallocating parent pages\n");
-      memRegDel(alloc2);
-      exit();
+      // memRegDel(alloc2);     // uncomment to test `exit()` not deallocating pages already freed
+      exit();                   
       printf("[test-alloc] Test successful!\n\n\n");
     }
   }

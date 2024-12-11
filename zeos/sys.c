@@ -131,22 +131,38 @@ int sys_fork(void)
   }
   
   // Copy parent's allocated pages to child
+  INIT_LIST_HEAD(&uchild->task.allocated_pages_list);
   struct list_head* element;
   list_for_each(element, &current()->allocated_pages_list) {
-    struct page_metadata* metadata = list_entry(element, struct page_metadata, list);
-    if (metadata->marker != METADATA_MARKER) break;
-
+    struct page_metadata* metadata =
+        list_entry(element, struct page_metadata, list);
     unsigned int metadata_page = (long)metadata >> 12;
-    
+
     for (int i = 0; i < metadata->size; i++) {
       int frame = alloc_frame();
+      if (frame > 0) {
+        int page = metadata_page + i;
+        printkf("[sys_fork] Copying page %d\n", &page);
+
+        set_ss_pag(process_PT, page, frame);
+        set_ss_pag(parent_PT, temp_logical, frame);
+
+        struct page_metadata* target_metadata = (void*)(long)(temp_logical << 12);
+        copy_data((void*)(long)(page << 12), target_metadata, PAGE_SIZE);
+        list_add_tail(&target_metadata->list,&uchild->task.allocated_pages_list);
+
+        del_ss_pag(parent_PT, temp_logical);
+        /* Deny access to the child's memory space */
+        set_cr3(get_DIR(current()));
+      }
       // If error, revert process up to memory region that failed
-      if (frame < 0) {
+      else {
         // Free data frames
-        for (int i = 0; i < NUM_PAG_DATA; i++) free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA + i));
+        for (int i = 0; i < NUM_PAG_DATA; i++)
+          free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA + i));
         // Free extra allocated frames
         struct list_head* element2;
-        list_for_each(element2, &current()->allocated_pages_list) {            
+        list_for_each(element2, &current()->allocated_pages_list) {
           metadata = list_entry(element2, struct page_metadata, list);
           metadata_page = (long)metadata >> 12;
           for (int j = 0; j < metadata->size; j++) {
@@ -154,21 +170,11 @@ int sys_fork(void)
               list_add(lhcurrent, &freequeue);
               return -EAGAIN;
             }
-            free_frame(get_frame(process_PT, metadata_page+j));
-            del_ss_pag(process_PT, metadata_page+j);
+            free_frame(get_frame(process_PT, metadata_page + j));
+            del_ss_pag(process_PT, metadata_page + j);
           }
         }
       }
-
-      int page = metadata_page+i;
-      printkf("[sys_fork] Copying page %d\n", &page);
-
-      set_ss_pag(process_PT, page, frame);
-      set_ss_pag(parent_PT, temp_logical, frame);
-      copy_data((void*)(long)(page<<12), (void*)(long)(temp_logical<<12), PAGE_SIZE);
-      del_ss_pag(parent_PT, temp_logical);
-      /* Deny access to the child's memory space */
-      set_cr3(get_DIR(current()));
     }
   }
 
@@ -246,15 +252,15 @@ void thread_exit(struct task_struct* process) {
   
   // Deallocate dynamic pages
   struct list_head *element, *n;
+  printkf("[sys_exit] List: %p %p\n", process->allocated_pages_list.next, process->allocated_pages_list.prev);
   list_for_each_safe(element, n, &process->allocated_pages_list) {
     printkf("[sys_exit] Going to first element of allocated list\n");
     struct page_metadata* metadata = list_entry(element, struct page_metadata, list);
+
     int start_page = (long)metadata >> 12;
     printkf("[sys_exit] Freeing dynamic pages from %d", &start_page);
     int end_page = start_page + metadata->size;
     printkf(" to %d\n",&end_page);
-    if (metadata->marker != METADATA_MARKER) break;
-    
     dealloc_pages(process, start_page, metadata->size);
   }
   
