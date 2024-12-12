@@ -153,6 +153,7 @@ int sys_fork(void)
         
         // Corregir primera entrada de la llista del fill, assignant el punter a l'adreça de l'atribut del task_struct
         // Si no es corregeix la llista continuara utilitzant l'adreça del pare, i donara errors
+        // Ha d'estar dins el bucle perque sino no tenim acces a la memoria del fill
         if (i == 0 && element == parent_allocated_pages_list->next) {
           uchild->task.allocated_pages_list.prev = parent_allocated_pages_list->prev;
           uchild->task.allocated_pages_list.next = parent_allocated_pages_list->next;
@@ -162,7 +163,7 @@ int sys_fork(void)
         if (i == 0 && element == parent_allocated_pages_list->prev) {
           target_metadata->list.next = &uchild->task.allocated_pages_list;
         }
-
+        
         del_ss_pag(parent_PT, temp_logical);
         /* Deny access to the child's memory space */
         set_cr3(get_DIR(current()));
@@ -263,10 +264,6 @@ void thread_exit(struct task_struct* process) {
   printkf("[sys_exit] Exiting thread PID = %d; TID = %d;\n", &process->PID, &process->TID);
   
   // Deallocate dynamic pages
-  {
-    int list_first_dir = (long)(&process->allocated_pages_list.next) >> 12;
-    printkf("[sys_exit] Accessing list %d %p\n", &list_first_dir, process->allocated_pages_list.prev);
-  }
   struct list_head *element, *n;
   list_for_each_safe(element, n, &process->allocated_pages_list) {
     struct page_metadata* metadata = list_entry(element, struct page_metadata, list);
@@ -290,13 +287,12 @@ void thread_exit(struct task_struct* process) {
 void sys_exit() {
   struct task_struct* process = current();
   printkf("[sys_exit] Exiting process PID = %d; TID = %d;\n", &process->PID, &process->TID);
-  //page_table_entry *process_PT = get_PT(process);
   
   // If main process, exit all threads with same PID
   if (process->TID == 0) {
     // Iterate over all tasks, so even if a thread is blocked it's deleted correctly
-    // First two (protected, idle) and last (protected) are reserved
-    for (int i = 2; i < NR_TASKS-1; i++) {
+    // First two (protected, idle) are reserved
+    for (int i = 2; i < NR_TASKS+1; i++) {
       union task_union* thread = &protected_tasks[i];
       if (thread->task.PID != process->PID || thread->task.TID == 0) continue;
       list_del(&thread->task.list); // must be in freequeue or other list
