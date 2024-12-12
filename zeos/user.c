@@ -23,9 +23,9 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
 
   // test_keyboard(0);
   // test_screen(0);
-  test_fork(4);
-  test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
-  test_semaphore();
+  // test_fork(4);
+  // test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
+  // test_semaphore();
   if (!test_alloc()) exit();
 
   println("Finished tests!\n\n");
@@ -243,6 +243,24 @@ void test_semaphore() {
   printf("[test-semaphore] Test successful!\n\n\n");
 }
 
+void tat(void* arg) {
+  char* alloc = arg;
+  int thread = alloc[0];
+  printf("[test-alloc] Spawned thread #%d\n", &thread);
+  printf("[test-alloc] Testing accessing parent's allocation: '%s'\n", &alloc[1]);
+  printf("[test-alloc] Testing creating allocation\n");
+  char* alloc2 = memRegGet(1);
+  alloc2[0] = 'J';
+  alloc2[1] = 'a';
+  alloc2[2] = 'j';
+  alloc2[3] = 'a';
+  alloc2[4] = 0;
+  printf("[test-alloc] Testing accessing allocation: '%s'\n", alloc2);
+  printf("[test-alloc] Deleting allocation...\n");
+  memRegDel(alloc);
+  memRegDel(alloc2);
+  printf("[test-alloc] Thread #%d test complete!\n", &thread);
+}
 int test_alloc() {
   int n = 3;
   printf("[test-alloc] Allocating %d pages...\n", &n);
@@ -257,7 +275,7 @@ int test_alloc() {
   alloc[3] = 'a';
   alloc[4] = 0;
 
-  printf("[test-alloc] Printing allocated string: %s\n", alloc);
+  printf("[test-alloc] Printing allocated string: '%s'\n", alloc);
   
   printf("[test-alloc] Deallocating pages...\n", &n);
   if (memRegDel(alloc) < 0) {
@@ -265,13 +283,22 @@ int test_alloc() {
     return 0;
   }
 
-  printf("[test-alloc] Testing allocation persistent on fork\n");
+  printf("[test-alloc] Testing allocation persistent on threads\n");
   char* alloc2 = memRegGet(n);
-  alloc2[3] = 'F';
-  alloc2[4] = 'a';
-  char* alloc3 = memRegGet(n);
-  alloc3[93] = 'R';
-  alloc3[94] = 'e';
+  alloc2[0] = 1;
+  alloc2[1] = 'D';
+  alloc2[2] = 'o';
+  alloc2[3] = 0;
+  threadCreateWithStack(tat, 2, alloc2);
+  yield();
+  
+  printf("[test-alloc] Testing allocation persistent on fork\n");
+  char* alloc4 = memRegGet(n);
+  alloc4[3] = 'F';
+  alloc4[4] = 'a';
+  char* alloc5 = memRegGet(n);
+  alloc5[93] = 'R';
+  alloc5[94] = 'e';
   
   switch (fork()) {
     case -1: {
@@ -280,24 +307,24 @@ int test_alloc() {
     };
     case 0: {
       printf("[test-alloc] Checking if children has access to a copy of the allocated pages\n");
-      if (alloc2[3] != 'F') {
-        printf("[test-alloc] Expected alloc[3] = 'F', found %c\n", &alloc2[3]);
+      if (alloc4[3] != 'F') {
+        printf("[test-alloc] Expected alloc[3] = 'F', found %c\n", &alloc4[3]);
         return 0;
       }
-      if (alloc2[4] != 'a') {
-        printf("[test-alloc] Expected alloc[4] = 'a', found %c\n", &alloc2[4]);
+      if (alloc4[4] != 'a') {
+        printf("[test-alloc] Expected alloc[4] = 'a', found %c\n", &alloc4[4]);
         return 0;
       }
-      alloc2[5] = '\0';
-      printf("[test-alloc] Printing child's string: %s\n", &alloc2[3]);
+      alloc4[5] = '\0';
+      printf("[test-alloc] Printing child's string: %s\n", &alloc4[3]);
       printf("[test-alloc] Deallocating child pages\n");
-      memRegDel(alloc2);      // comment to test `exit()` deallocating pages
+      memRegDel(alloc4);      // comment to test `exit()` deallocating pages
       exit();
     };
     default: {
       yield();               // uncomment to test exiting before child
       printf("[test-alloc] Deallocating parent pages\n");
-      memRegDel(alloc2);     // uncomment to test `exit()` not deallocating pages already freed           
+      memRegDel(alloc4);     // uncomment to test `exit()` not deallocating pages already freed           
       printf("[test-alloc] Test successful!\n\n\n");
     }
   }
