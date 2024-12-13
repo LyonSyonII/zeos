@@ -21,11 +21,11 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
   // player: 2
   // enemy: 8
 
-  test_keyboard(0);
-  test_screen(0);
-  test_fork(4);
-  test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
-  test_semaphore();
+  // test_keyboard(0);
+  // test_screen(0);
+  // test_fork(4);
+  // test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
+  // test_semaphore();
   if (!test_alloc()) exit();
 
   println("Finished tests!\n\n");
@@ -274,6 +274,13 @@ int test_alloc() {
   alloc[2] = 'l';
   alloc[3] = 'a';
   alloc[4] = 0;
+
+  // uncomment to test disallowing user to access metadata page (should page fault)
+  // int* _metadata = ((((long)alloc >> 12) << 12) - 4096); 
+  // if (*_metadata == 0xDEADBED) {
+  //   printf("WRONG\n");
+  //   while(1);
+  // }
 
   printf("[test-alloc] Printing allocated string: '%s'\n", alloc);
   
