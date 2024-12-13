@@ -353,13 +353,11 @@ int sys_changecolor(int fg, int bg) {
 }
 
 int sys_clrscr(char *b) {
+  Word *screen = (Word*)0xb8000;
   if (b == NULL) {
-    Word *screen = (Word*)0xb8000;
-    for (int i = 0; i < NUM_ROWS; ++i) {
-      for (int j = 0; j < NUM_COLUMNS; ++j) {
-        *screen = 0x0000;
-        ++screen;
-      }
+    for (int cnt = 0; cnt < NUM_COLUMNS*NUM_ROWS; ++cnt) {
+      *screen = 0x0000;
+      ++screen;
     }
     return 0;
   }
@@ -368,7 +366,7 @@ int sys_clrscr(char *b) {
     return -EFAULT;
   }
 
-  return copy_from_user(b, (Word*)0xb8000, NUM_COLUMNS*NUM_ROWS*sizeof(Word));
+  return copy_from_user(b, screen, NUM_COLUMNS*NUM_ROWS*sizeof(Word));
 }
 
 int sys_getkey(char* b, int timeout) {
