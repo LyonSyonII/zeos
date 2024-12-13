@@ -376,7 +376,6 @@ int sys_getkey(char* b, int timeout) {
   
   if (kbuf_pop(&kbuf, b)) return 0;
   
-  // TODO(fix): La llista de procesos bloquejats per timeout no està ordenada, i només desbloquejeu al primer sense comprovar si cal o no...
   current()->p_stats.blocked_ticks = timeout*TICKS_PER_SECOND;
   update_process_state_rr(current(), &keyboard_blocked);
   sched_next_rr();
@@ -507,22 +506,6 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   uchild->stack[KERNEL_STACK_SIZE - 5] = (unsigned long)wrapper; // eip
   uchild->stack[KERNEL_STACK_SIZE - 2] = (unsigned long)&user_stack[USER_STACK_SIZE - 2]; // esp
   uchild->task.register_esp = (int)(long)&uchild->stack[KERNEL_STACK_SIZE - 18]; // ebp
-  
-  /*
-    @ret wrapper
-    parameter
-    *funcio
-
-    
-    @ret wrapper
-    parameter
-
-    threadCreate -> user_stack:
-    wrapper:
-    popl %eax
-    call *%eax
-    call exit
-  */
 
   /* Set stats to 0 */
   init_stats(&(uchild->task.p_stats));
@@ -545,6 +528,8 @@ char* sys_memregget(int num_pages) {
   int first_page = alloc_pages(current(), num_pages+1);
   struct page_metadata* metadata = (struct page_metadata*)(long)(first_page << 12);
   *metadata = new_page_metadata(num_pages+1);
+  page_table_entry* process_PT = get_PT(current());
+  process_PT[first_page].bits.user = 0;
   
   list_add_tail(&metadata->list, &current()->allocated_pages_list);
   // return skipping metadata page
