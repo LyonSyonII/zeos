@@ -20,13 +20,13 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
   printchar('\n');
   // player: 2
   // enemy: 8
-
+  
   // test_keyboard(0);
   // test_screen(0);
   // test_fork(4);
   // test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
-  // test_semaphore();
-  if (!test_alloc()) exit();
+  test_semaphore();
+  // if (!test_alloc()) exit();
 
   println("Finished tests!\n\n");
   exit();
@@ -260,9 +260,22 @@ void tat(void* arg) {
   alloc2[3] = 'a';
   alloc2[4] = 0;
   printf("[test-alloc] Testing accessing allocation: '%s'\n", alloc2);
-  printf("[test-alloc] Deleting allocation...\n");
-  memRegDel(alloc);
+
+  printf("[test-alloc] Testing freeing memory from fork of thread\n");
+  int child = fork();
+  if (child == 0) {
+    printf("[test-alloc] Freeing memory from thread's fork\n");
+  } else {
+    yield();
+    printf("[test-alloc] Freeing thread's memory\n");
+  }
   memRegDel(alloc2);
+  printf("[test-alloc] Freed thread's memory\n[test-alloc] Freeing parent's\n");
+  memRegDel(alloc);
+  if (child == 0) {
+    printf("[test-alloc] Memory successfully freed from thread's fork\n");
+    exit();
+  }
   printf("[test-alloc] Thread #%d test complete!\n", &thread);
 }
 int test_alloc() {
@@ -310,6 +323,8 @@ int test_alloc() {
   char* alloc5 = memRegGet(n);
   alloc5[93] = 'R';
   alloc5[94] = 'e';
+  
+  printf("[test-alloc] Starting fork\n");
   
   switch (fork()) {
     case -1: {

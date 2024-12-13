@@ -70,6 +70,8 @@ int access_ok(int type, const void * addr, unsigned long size)
 
   addr_ini=(((unsigned long)addr)>>12);
   addr_fin=((((unsigned long)addr)+size)>>12);
+  // printkf("[access_ok] Checking pages from %d to %d\n", &addr_ini, &addr_fin);
+
   if (addr_fin < addr_ini) return 0; //This looks like an overflow ... deny access
   
   if (type == VERIFY_WRITE) {
@@ -84,7 +86,7 @@ int access_ok(int type, const void * addr, unsigned long size)
   
   for (int i = addr_ini; i < addr_fin; i++) {
     printkf("[access_ok] Checking page: %d\n", &i);
-    if (PT[i].entry == 0) return 0;
+    if (PT[i].bits.user == 0) return 0;
   }
   
   // OLD IMPL

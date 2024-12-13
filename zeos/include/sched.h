@@ -36,6 +36,7 @@ union task_union {
 };
 
 struct sem_t {
+  int id;
   int count;
   int creator_TID;
   struct list_head blocked;
@@ -46,6 +47,7 @@ extern union task_union protected_tasks[NR_TASKS+2];
 extern union task_union *task; /* Vector de tasques */
 extern struct task_struct *idle_task;
 
+extern uint global_semaphore_id;
 extern struct sem_t semaphores[NR_TASKS+2];
 extern struct list_head semqueue;
 

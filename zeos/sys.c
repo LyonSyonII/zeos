@@ -110,90 +110,77 @@ int sys_fork(void)
   
   /* Copy parent's SYSTEM and CODE to child. */
   page_table_entry *parent_PT = get_PT(current());
-  for (pag=0; pag<NUM_PAG_KERNEL; pag++)
-  {
+  for (pag=0; pag<NUM_PAG_KERNEL; pag++) {
     set_ss_pag(process_PT, pag, get_frame(parent_PT, pag));
   }
-  for (pag=0; pag<NUM_PAG_CODE; pag++)
-  {
+  for (pag=0; pag<NUM_PAG_CODE; pag++) {
     set_ss_pag(process_PT, PAG_LOG_INIT_CODE+pag, get_frame(parent_PT, PAG_LOG_INIT_CODE+pag));
   }
   /* Copy parent's DATA to child. We will use TOTAL_PAGES-1 as a temp logical page to map to */
   unsigned int temp_logical = TOTAL_PAGES-1;
-  for (pag=NUM_PAG_KERNEL+NUM_PAG_CODE; pag<NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA; pag++)
-  {
+  for (pag=NUM_PAG_KERNEL+NUM_PAG_CODE; pag<NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA; pag++) {
     /* Map one child page to parent's address space. */
     set_ss_pag(parent_PT, temp_logical, get_frame(process_PT, pag));
-    copy_data((void*)(long)(pag<<12), (void*)(long)((temp_logical)<<12), PAGE_SIZE);
+    copy_data((void*)(long)(pag<<12), (void*)(long)(temp_logical<<12), PAGE_SIZE);
     del_ss_pag(parent_PT, temp_logical);
     /* Deny access to the child's memory space */
     set_cr3(get_DIR(current()));
   }
   
-  // Copy parent's allocated pages to child
-  // uchild->task.allocated_pages_list = current()->allocated_pages_list;
+  /* Copy all of parent's used pages */
+  for (pag = PAG_LOG_INIT_DATA + NUM_PAG_DATA; pag < TOTAL_PAGES; pag++) {
+    // if unused do not copy
+    if (parent_PT[pag].entry == 0) continue;
+    
+    int frame = alloc_frame();
+    if (frame > 0) {
+      printkf("[KERNEL] Assigned page %d to frame %d\n", &pag, &frame);
+      set_ss_pag(process_PT, pag, frame);
+      set_ss_pag(parent_PT, temp_logical, frame);
+      copy_data((void*)(long)(pag<<12), (void*)(long)(temp_logical << 12), PAGE_SIZE);
+      del_ss_pag(parent_PT, temp_logical);
+      set_cr3(get_DIR(current()));
+    } else {
+      // Free pages up to the one that failed
+      dealloc_pages(&uchild->task, PAG_LOG_INIT_DATA+NUM_PAG_DATA, pag-1, 1);
+      // Dealloc task_struct
+      list_add_tail(lhcurrent, &freequeue);
+      return -EAGAIN;
+    }
+  }  
+  
   INIT_LIST_HEAD(&uchild->task.allocated_pages_list);
   struct list_head* parent_allocated_pages_list = &current()->allocated_pages_list;
-  struct list_head* element, *n;
-  list_for_each(element, parent_allocated_pages_list) {
-    struct page_metadata* metadata = list_entry(element, struct page_metadata, list);
-    unsigned int metadata_page = (long)metadata >> 12;
-
-    for (int i = 0; i < metadata->size; i++) {
-      int frame = alloc_frame();
-      if (frame > 0) {
-        int page = metadata_page + i;
-        printkf("[sys_fork] Copying page %d; metadata %p -> %p\n", &page, element->prev, element);
-
-        set_ss_pag(process_PT, page, frame);
-        set_ss_pag(parent_PT, temp_logical, frame);
-        
-        struct page_metadata* target_metadata = (void*)(long)(temp_logical << 12);
-        copy_data((void*)(long)(page << 12), target_metadata, PAGE_SIZE);
-        
-        // Corregir primera entrada de la llista del fill, assignant el punter a l'adreça de l'atribut del task_struct
-        // Si no es corregeix la llista continuara utilitzant l'adreça del pare, i donara errors
-        // Ha d'estar dins el bucle perque sino no tenim acces a la memoria del fill
-        if (i == 0 && element == parent_allocated_pages_list->next) {
-          uchild->task.allocated_pages_list.prev = parent_allocated_pages_list->prev;
-          uchild->task.allocated_pages_list.next = parent_allocated_pages_list->next;
-          target_metadata->list.prev = &uchild->task.allocated_pages_list;
-        }
-        // Corregir ultima entrada de la llista del fill, assignant el punter a l'adreça de l'atribut del task_struct
-        if (i == 0 && element == parent_allocated_pages_list->prev) {
-          target_metadata->list.next = &uchild->task.allocated_pages_list;
-        }
-        
-        del_ss_pag(parent_PT, temp_logical);
-        /* Deny access to the child's memory space */
-        set_cr3(get_DIR(current()));
-      }
-      // If error, revert process up to memory region that failed
-      else {
-        // Dealloc task_struct
-        list_add_tail(lhcurrent, &freequeue);
-        // Free data frames
-        dealloc_pages(&uchild->task, PAG_LOG_INIT_DATA, NUM_PAG_DATA, 0);
-        // Free extra allocated frames
-        struct list_head* element2;
-        list_for_each(element2, parent_allocated_pages_list) {
-          metadata = list_entry(element2, struct page_metadata, list);
-          metadata_page = (long)metadata >> 12;
-          // If end reached, dealloc up to page that failed and return
-          if (element2 == element) { 
-            dealloc_pages(&uchild->task, metadata_page, i, 1);
-            return -EAGAIN;
-          } else { 
-            dealloc_pages(&uchild->task, metadata_page, metadata->size, 0);
-          }
-        }
-      }
-    }
+  if (!list_empty(parent_allocated_pages_list)) {
+    // Corregir primera entrada de la llista del fill, assignant el punter a l'adreça de l'atribut del task_struct
+    // Si no es corregeix la llista continuara utilitzant l'adreça del pare, i donara errors
+    struct page_metadata* first_metadata = list_entry(parent_allocated_pages_list->next, struct page_metadata, list);
+    int metadata_page = (long)first_metadata >> 12;
+    int frame = get_frame(process_PT, metadata_page);
+    // set_ss_pag(process_PT, metadata_page, frame);
+    set_ss_pag(parent_PT, temp_logical, frame);
+    struct page_metadata* target_metadata = (void*)(long)(temp_logical << 12);
+    uchild->task.allocated_pages_list.prev = parent_allocated_pages_list->prev;
+    uchild->task.allocated_pages_list.next = parent_allocated_pages_list->next;
+    target_metadata->list.prev = &uchild->task.allocated_pages_list;
+    del_ss_pag(parent_PT, temp_logical);
+    set_cr3(get_DIR(current()));
+    
+    // Corregir ultima entrada de la llista del fill, assignant el punter a l'adreça de l'atribut del task_struct
+    struct page_metadata* last_metadata = list_entry(parent_allocated_pages_list->prev, struct page_metadata, list);
+    metadata_page = (long)last_metadata >> 12;
+    frame = get_frame(process_PT, metadata_page);
+    // set_ss_pag(process_PT, metadata_page, frame);
+    set_ss_pag(parent_PT, temp_logical, frame);
+    target_metadata = (void*)(long)(temp_logical << 12);
+    target_metadata->list.next = &uchild->task.allocated_pages_list;
+    del_ss_pag(parent_PT, temp_logical);
+    set_cr3(get_DIR(current()));
   }
-
   // volatile int* a = 0; *a;
   
   uchild->task.PID=++global_PID;
+  uchild->task.TID=0;
 
   int register_ebp;		/* frame pointer */
   /* Map Parent's ebp to child's stack */
@@ -293,15 +280,21 @@ void sys_exit() {
     // Iterate over all tasks, so even if a thread is blocked it's deleted correctly
     // First two (protected, idle) are reserved
     for (int i = 2; i < NR_TASKS+1; i++) {
-      union task_union* thread = &protected_tasks[i];
-      if (thread->task.PID != process->PID || thread->task.TID == 0) continue;
-      list_del(&thread->task.list); // must be in freequeue or other list
-      thread_exit(&thread->task);
+      struct task_struct* thread = &protected_tasks[i].task;
+      if (thread->PID != process->PID) continue;
+      
+      // Free task_struct (must be in freequeue or other list)
+      if (thread != process) list_del(&thread->list);
+      list_add_tail(&thread->list, &freequeue);
+      thread->PID=-1;
+      thread->TID=-1;
     }
+    // Free all pages
+    dealloc_pages(process, PAG_LOG_INIT_DATA, TOTAL_PAGES-PAG_LOG_INIT_DATA, 1);
+  } else {
+    // Deallocate all the propietary physical pages and free task struct
+    thread_exit(process);
   }
-  
-  // Deallocate all the propietary physical pages and free task struct
-  thread_exit(process);
 
   // Restarts execution of the next process
   sched_next_rr();
@@ -394,26 +387,29 @@ struct sem_t* sys_semcreate(int initial_value) {
   struct sem_t* sem = list_entry(first, struct sem_t, list);
   
   INIT_LIST_HEAD(&sem->blocked);
+  sem->id = ++global_semaphore_id;
   sem->creator_TID = current()->TID;
   sem->count = initial_value;
-
-  // printkf("[sys_semcreate] Returning sem to the user: 0x%p\n", sem);
   
-  return sem;
+  return (struct sem_t*)(long)global_semaphore_id;
 }
 
-int sem_ptr_ok(struct sem_t* s) {
+struct sem_t* get_sem_from_user_ptr(struct sem_t* s) {
+  unsigned long sem_id = (unsigned long)(s);
   // User shouldn't be able to access `s`, if it can it's probably a security hole
   // Check if `s` points where it should 
-  return s >= &semaphores[0] && s <= &semaphores[NR_TASKS];
+  for (int i = 1; i < NR_TASKS+1; i++) {
+    if (semaphores[i].id == sem_id) return &semaphores[i];
+  }
+  return NULL;
 }
 
 // Decrement the semaphore’s counter and block the current thread if the counter is negative
 int sys_semwait(struct sem_t* s) {
-  // printkf("[sys_semwait] Received s: 0x%p\n", s);
+  // convert id to sem ptr
+  s = get_sem_from_user_ptr(s);
+  if (s == NULL) return -EFAULT;
   
-  if (!sem_ptr_ok(s)) return -EFAULT;
-
   s->count -= 1;
   if (s->count < 0) {
     // printkf("[sys_semwait] Sem count is negative, blocking thread...\n");
@@ -426,8 +422,8 @@ int sys_semwait(struct sem_t* s) {
 
 // Increase the semaphores's counter and unblock the first blocked thread in the semaphore's queue
 int sys_semsignal(struct sem_t* s) {
-  // printkf("[sys_semwait] Received s: 0x%p\n", s);
-  if (!sem_ptr_ok(s)) return -EFAULT;
+  s = get_sem_from_user_ptr(s);
+  if (s == NULL) return -EFAULT;
 
   s->count += 1;
   if (list_empty(&s->blocked)) return 0;
@@ -441,7 +437,8 @@ int sys_semsignal(struct sem_t* s) {
 
 // Destroy the semaphore (only the thread that created a semaphore can destroy it)
 int sys_semdestroy(struct sem_t* s) {
-  if (!sem_ptr_ok(s)) return -EFAULT;
+  s = get_sem_from_user_ptr(s);
+  if (s == NULL) return -EFAULT;
   if (s->creator_TID != current()->TID) return -EINVAL;
   
   // unblock all threads
@@ -450,16 +447,18 @@ int sys_semdestroy(struct sem_t* s) {
     struct task_struct* task = list_entry(entry, struct task_struct, list);
     update_process_state_rr(task, &readyqueue);
   }
-
-  // TODO: Add marker to task to know when a semaphore has been destroyed and skip waiting? 
   
   // free semaphore
+  s->id = -1;
   list_add_tail(&s->list, &semqueue);
   
   return 0;
 }
 
 int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* parameter, void* wrapper) {
+  if (!access_ok(VERIFY_READ, function, sizeof(function))/*  || !access_ok(VERIFY_WRITE, parameter, sizeof(parameter)) */)
+    return -EFAULT;
+
   struct task_struct* parent = current();
   struct list_head *lhcurrent = NULL;
   union task_union *uchild;

@@ -326,10 +326,12 @@ int alloc_pages(struct task_struct *task, int N) {
 // The caller is responsible to check if the `start_page..N` region is valid.
 void dealloc_pages(struct task_struct *task, int start_page, int N, int flush_tlb) {
   page_table_entry* PT = get_PT(task);
-  for (int page = start_page; page < start_page+N; ++page) {
+  int end_page = start_page+N-1;
+  printkf("[KERNEL] Deallocating pages from %d to %d\n", &start_page, &end_page);
+  for (int page = start_page; page <= end_page; ++page) {
+    // printkf("[KERNEL] Deallocating page %d\n", &page);
     free_frame(get_frame(PT, page));
     del_ss_pag(PT, page);
-    printkf("[KERNEL] Deallocating page %d\n", &page);
   }
 
   if (flush_tlb) set_cr3(get_DIR(task));

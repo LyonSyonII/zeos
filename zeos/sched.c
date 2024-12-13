@@ -22,6 +22,7 @@ union task_union protected_tasks[NR_TASKS+2]
 
 union task_union *task = &protected_tasks[1]; /* == union task_union task[NR_TASKS] */
 
+uint global_semaphore_id = 0;
 struct sem_t semaphores[NR_TASKS+2];
 struct list_head semqueue;
 
@@ -237,7 +238,7 @@ void init_freequeue()
 
 void init_semaphores() {
   INIT_LIST_HEAD(&semqueue);
-  for (int i=0; i < NR_TASKS; i++) {
+  for (int i=1; i < NR_TASKS+1; i++) {
     list_add_tail(&(semaphores[i].list), &semqueue);
   }
 }
