@@ -97,6 +97,10 @@ void test_screen(int block) {
   int x = 100, y = 0;
   Byte color = 0;
   clrscr((char*)map);
+
+  wait(500);
+
+  clrscr((char*)0);
   
   while (block) {
     char tecla;
