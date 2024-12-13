@@ -337,7 +337,6 @@ int sys_get_stats(int pid, struct stats *st)
 
 
 
-// Si estem fora del rang en alguna coordenada canviarem el valor a la coordenada valida més proxima
 int sys_gotoxy(int x, int y) {
   if (x >= NUM_COLUMNS || x < 0 || y >= NUM_ROWS || y < 0) return -EINVAL;
 
@@ -347,7 +346,7 @@ int sys_gotoxy(int x, int y) {
 }
 
 int sys_changecolor(int fg, int bg) {
-  if (fg < 0 || bg < 0) return -EINVAL;
+  if (fg < 0  || fg > 0x0F || bg < 0 || bg > 0x0F) return -EINVAL;
 
   screenColor = (bg&0x0F)<<4 | (fg&0x0F);
   return 0;
@@ -369,9 +368,7 @@ int sys_clrscr(char *b) {
     return -EFAULT;
   }
 
-  copy_from_user(b, (Word*)0xb8000, NUM_COLUMNS*NUM_ROWS*sizeof(Word));
-
-  return 0;
+  return copy_from_user(b, (Word*)0xb8000, NUM_COLUMNS*NUM_ROWS*sizeof(Word));
 }
 
 int sys_getkey(char* b, int timeout) {
@@ -457,7 +454,7 @@ int sys_semdestroy(struct sem_t* s) {
     update_process_state_rr(task, &readyqueue);
   }
 
-  // TODO: Add marker to task to know when a semaphore has been destroyed and skip waiting?
+  // TODO: Add marker to task to know when a semaphore has been destroyed and skip waiting? 
   
   // free semaphore
   list_add_tail(&s->list, &semqueue);
@@ -503,14 +500,30 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   // setup user and system stack
   unsigned long* user_stack = (unsigned long*)(long)(stack_page << 12);
   unsigned long USER_STACK_SIZE = N * 1024;
-  user_stack[USER_STACK_SIZE - 3] = 0; // return address will never be reached
+  // user_stack[USER_STACK_SIZE - 3] = 0; // return address will never be reached
   user_stack[USER_STACK_SIZE - 2] = (unsigned long)function;
   user_stack[USER_STACK_SIZE - 1] = (unsigned long)parameter;  
   
   uchild->stack[KERNEL_STACK_SIZE - 5] = (unsigned long)wrapper; // eip
-  uchild->stack[KERNEL_STACK_SIZE - 2] = (unsigned long)&user_stack[USER_STACK_SIZE - 3]; // esp
+  uchild->stack[KERNEL_STACK_SIZE - 2] = (unsigned long)&user_stack[USER_STACK_SIZE - 2]; // esp
   uchild->task.register_esp = (int)(long)&uchild->stack[KERNEL_STACK_SIZE - 18]; // ebp
   
+  /*
+    @ret wrapper
+    parameter
+    *funcio
+
+    
+    @ret wrapper
+    parameter
+
+    threadCreate -> user_stack:
+    wrapper:
+    popl %eax
+    call *%eax
+    call exit
+  */
+
   /* Set stats to 0 */
   init_stats(&(uchild->task.p_stats));
 

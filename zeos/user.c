@@ -21,11 +21,11 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
   // player: 2
   // enemy: 8
 
-  // test_keyboard(0);
-  // test_screen(0);
-  // test_fork(4);
-  // test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
-  // test_semaphore();
+  test_keyboard(0);
+  test_screen(0);
+  test_fork(4);
+  test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
+  test_semaphore();
   if (!test_alloc()) exit();
 
   println("Finished tests!\n\n");

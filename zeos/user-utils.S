@@ -45,12 +45,9 @@ ENTRY(fork)
 	ret
 
 ENTRY(threadCreateWithStackWrapper)
-	pushl %ebp
-	movl %esp,%ebp
-	pushl 12(%ebp)
-	movl 8(%ebp),%eax
-	call *%eax
-	call exit
+	popl %eax
+    call *%eax
+    call exit
 	ret
 
 /* int threadCreateWithStack(void (*function)(void* arg), int N, void* parameter) */
