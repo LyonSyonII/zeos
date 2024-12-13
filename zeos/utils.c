@@ -72,8 +72,6 @@ int access_ok(int type, const void * addr, unsigned long size)
   addr_fin=((((unsigned long)addr)+size)>>12);
   if (addr_fin < addr_ini) return 0; //This looks like an overflow ... deny access
   
-  // TODO: Check page for the attribute that indicates that the page can be used (not freed)
-  
   if (type == VERIFY_WRITE) {
     // Should suppose no support for automodifyable code
     if (addr_ini < USER_FIRST_PAGE+NUM_PAG_CODE) return 0;
