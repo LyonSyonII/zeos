@@ -151,7 +151,7 @@ typedef enum {
 
 
 
-void write_xy(char c, int x, int y, colors_fg fg, colors_bg bg, Word Screen[25][80]);
+void write_xy(char c, int x, int y, colors_fg fg, colors_bg bg, Word* screen);
 
 
 #endif  /* __LIBC_H__ */
