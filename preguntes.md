@@ -1,9 +1,12 @@
 
 # M5
-- ??? No usa interficie demanada
-    - Comprovar parametres
-    - Exit de TID = 0 borra totes les pagines
-    - Fork copia totes les pagines
+- Comprovar parametres
+- Exit de TID = 0 borra totes les pagines
+- Fork copia totes les pagines
+
+- proces: create_thread(2)
+- thread: create_thread(2)
+- thread2: fork()
 
 # Semafors
 - Que faig quan es destrueix un semafor i hi ha processos que poden esperar-se encara?

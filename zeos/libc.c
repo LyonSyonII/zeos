@@ -86,90 +86,91 @@ void perror()
 
 
 // Prints the provided buffer
-int print(char* buffer) {
-  return write(STDOUT, buffer, strlen(buffer));
+int print(char* buffer, int fd) {
+  return write(fd, buffer, strlen(buffer));
 }
 // Prints the provided character
-int printchar(char c) {
-  return write(STDOUT, &c, 1);
+int printchar(char c, int fd) {
+  return write(fd, &c, 1);
 }
 // Prints the provided integer
-int printint(int i) {
+int printint(int i, int fd) {
   char itoa_buff[11];
   itoa(i, itoa_buff);
-  return print(itoa_buff);
+  return print(itoa_buff, fd);
 }
 // Prints the provided integer with a newline at the end
-int printintln(int i) {
+int printintln(int i, int fd) {
   int written, err;
-  if ((written = printint(i)) < 0) return written;
-  if ((err = printchar('\n')) < 0) return err;
+  if ((written = printint(i, fd)) < 0) return written;
+  if ((err = printchar('\n', fd)) < 0) return err;
   return written + 1;
 }
 // Prints the provided buffer with a newline at the end
-int println(char* buffer) {
+int println(char* buffer, int fd) {
   int written, err;
-  if ((written = print(buffer)) < 0) return written;
-  if ((err = printchar('\n')) < 0) return err;
+  if ((written = print(buffer, fd)) < 0) return written;
+  if ((err = printchar('\n', fd)) < 0) return err;
   return written + 1;
 }
 
 // Prints the provided integer in hexadecimal
-void printhex(int i) {
+void printhex(int i, int fd) {
   char buf[11];
   itox(i, buf);
-  print(buf);
+  print(buf, fd);
 }
 
 // Prints the provided integer in hexadecimal plus a newline
-void printhexln(int i) {
-  printhex(i);
-  printchar('\n');
+void printhexln(int i, int fd) {
+  printhex(i, fd);
+  printchar('\n', fd);
 }
 
-void printptr(const void* ptr) {
+void printptr(const void* ptr, int fd) {
   if (ptr == NULL) {
-    print("NULL");
+    print("NULL", fd);
     return;
   }
-  printhex((int)(long)ptr);
+  print("0x", fd);
+  printhex((int)(long)ptr, fd);
 }
 
-void printptrln(void* ptr) {
-  printptr(ptr);
-  printchar('\n');
+void printptrln(void* ptr, int fd) {
+  printptr(ptr, fd);
+  printchar('\n', fd);
 }
 
-void __printf(char* template, const void* args[]) {
+void __printf(char* template, const void* args[], int fd) {
   int i = 0, arg = 0;
   char c;
   while ( (c = template[i]) ) {
     i += 1;
     if (c != '%') {
-      printchar(c);
+      printchar(c, fd);
       continue;
     }
     switch (template[i]) {
       case 'd':
-        printint(*(int*)args[arg]);
+        printint(*(int*)args[arg], fd);
         break;
       case 'c':
-        printchar(*(char*)args[arg]);
+        printchar(*(char*)args[arg], fd);
         break;
       case 'p':
-        printptr(args[arg]);
+        printptr(args[arg], fd);
         break;
       case 'x':
-        printhex(*(int*)args[arg]);
+        printhex(*(int*)args[arg], fd);
         break;
       case 's':
-        print((char*)args[arg]);
+        print((char*)args[arg], fd);
         break;
       case '%':
-        printchar('%');
+        printchar('%', fd);
         break;
       default:
-        printf("%%ERROR in arg %d%%", &arg);
+        __printf("%%ERROR in arg %d%%", (const void*[]){&arg}, fd);
         break;
     }
     arg += 1;

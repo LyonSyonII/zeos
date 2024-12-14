@@ -73,7 +73,7 @@ int __attribute__((__section__(".text.main")))
 
   /*** DO *NOT* ADD ANY CODE IN THIS ROUTINE BEFORE THIS POINT ***/
 
-  printk("Kernel Loaded!    ");
+  printscreen("Kernel Loaded!    ");
 
 
   /* Initialize hardware data */
@@ -100,8 +100,8 @@ int __attribute__((__section__(".text.main")))
   /* Move user code/data now (after the page table initialization) */
   copy_data((void *) KERNEL_START + *p_sys_size, usr_main, *p_usr_size);
 
-
-  printk("Entering user mode...");
+  
+  printkf("[console] Entering user mode...\n");
 
   enable_int();
   /*

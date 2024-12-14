@@ -51,7 +51,7 @@ void keyboard_routine()
     Byte c = char_map[event&0x7F];
     kbuf_push(&kbuf, c);
     keyboard_unblock_first();
-    printc_xy(0, 0, c); // TODO: de moment ho deixem
+    // printc_xy(0, 0, c);
   }
 }
 

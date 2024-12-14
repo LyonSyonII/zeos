@@ -9,7 +9,8 @@
 #include "types.h"
 #include <stats.h>
 
-#define STDOUT 1
+#define FD_BOCHS 2
+#define FD_SCREEN 1
 
 extern int errno;
 
@@ -69,26 +70,30 @@ void RESTORE_REGS(void);
 // custom
 
 // Prints the provided buffer.
-int print(char* buffer);
+int print(char* buffer, int fd);
 // Prints the provided character.
-int printchar(char c);
+int printchar(char c, int fd);
 // Prints the provided integer.
-int printint(int i);
+int printint(int i, int fd);
 // Prints the provided integer with a newline at the end.
-int printintln(int i);
+int printintln(int i, int fd);
 // Prints the provided buffer with a newline at the end.
-int println(char* buffer);
+int println(char* buffer, int fd);
 // Supports: `%d`, `%p`, `%x`, `%s`.
-#define printf(template, ...) __printf(template, (const void*[]) { __VA_ARGS__ })
-void __printf(char* template, const void* args[]);
+#define printf(template, ...) __printf(template, (const void*[]){__VA_ARGS__}, FD_BOCHS)
+#define printscreen(template, ...) __printf(template, (const void*[]){__VA_ARGS__}, FD_SCREEN)
+/* #define printf(template, ...) __printf(template, CREATE_ARRAY(__VA_ARGS__), 2)
+#define printscreen(template, ...) __printf(template, CREATE_ARRAY(__VA_ARGS__), 1) */
+void __printf(char* template, const void* args[], int fd);
 
 
 // Macros per fer el printf sense referencies
-#define CAST_1(a1) (void *)(a1)
-#define CAST_2(a1, a2) CAST_1(a1), (void *)(a2)
-#define CAST_3(a1, a2, a3) CAST_2(a1, a2), (void *)(a3)
-#define CAST_4(a1, a2, a3, a4) CAST_3(a1, a2, a3), (void *)(a4)
-#define CAST_5(a1, a2, a3, a4, a5) CAST_4(a1, a2, a3, a4), (void *)(a5)
+#define CAST_0()
+#define CAST_1(a1) (void *)(long)(a1)
+#define CAST_2(a1, a2) CAST_1(a1), (void *)(long)(a2)
+#define CAST_3(a1, a2, a3) CAST_2(a1, a2), (void *)(long)(a3)
+#define CAST_4(a1, a2, a3, a4) CAST_3(a1, a2, a3), (void *)(long)(a4)
+#define CAST_5(a1, a2, a3, a4, a5) CAST_4(a1, a2, a3, a4), (void *)(long)(a5)
 // Extend up to CAST_10 as needed
 
 // Step 2: Macro to count the number of arguments (up to 10)
@@ -103,7 +108,7 @@ void __printf(char* template, const void* args[]);
 
 // Step 4: Final CREATE_ARRAY macro
 #define CREATE_ARRAY(...) \
-    (void *[]){ SELECT_CAST_MACRO(COUNT_ARGS(__VA_ARGS__))(__VA_ARGS__) }
+    (const void *[]){ SELECT_CAST_MACRO(COUNT_ARGS(__VA_ARGS__))(__VA_ARGS__) }
 
 
 #endif  /* __LIBC_H__ */

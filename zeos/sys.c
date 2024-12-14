@@ -29,7 +29,7 @@ void * get_ebp();
 
 int check_fd(int fd, int permissions)
 {
-  if (fd!=1) return -EBADF; 
+  if (fd!=1 && fd!=2) return -EBADF; 
   if (permissions!=ESCRIPTURA) return -EACCES; 
   return 0;
 }
@@ -219,17 +219,25 @@ int ret;
 		return -EINVAL;
 	if (!access_ok(VERIFY_READ, buffer, nbytes))
 		return -EFAULT;
-	
+
 	bytes_left = nbytes;
 	while (bytes_left > TAM_BUFFER) {
 		copy_from_user(buffer, localbuffer, TAM_BUFFER);
-		ret = sys_write_console(localbuffer, TAM_BUFFER);
+    if (fd == 2) { 
+      ret = sys_write_bochs(localbuffer, TAM_BUFFER); 
+    } else { 
+      ret = sys_write_console(localbuffer, TAM_BUFFER);
+    }
 		bytes_left-=ret;
 		buffer+=ret;
 	}
 	if (bytes_left > 0) {
 		copy_from_user(buffer, localbuffer,bytes_left);
-		ret = sys_write_console(localbuffer, bytes_left);
+    if (fd == 2) { 
+      ret = sys_write_bochs(localbuffer, bytes_left); 
+    } else { 
+      ret = sys_write_console(localbuffer, bytes_left);
+    }
 		bytes_left-=ret;
 	}
 	return (nbytes-bytes_left);

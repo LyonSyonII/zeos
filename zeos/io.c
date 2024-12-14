@@ -24,9 +24,12 @@ Byte inb (unsigned short port)
   return v;
 }
 
-void printc(char c)
+void printc(char c, int fd)
 {
-     __asm__ __volatile__ ( "movb %0, %%al; outb $0xe9" ::"a"(c)); /* Magic BOCHS debug: writes 'c' to port 0xe9 */
+  if (fd == 2) { 
+    __asm__ __volatile__ ( "movb %0, %%al; outb $0xe9" ::"a"(c)); /* Magic BOCHS debug: writes 'c' to port 0xe9 */
+    return;
+  }
   if (c=='\n')
   {
     x = 0;
@@ -52,16 +55,16 @@ void printc_xy(Byte mx, Byte my, char c)
   cy=y;
   x=mx;
   y=my;
-  printc(c);
+  printc(c, 1);
   x=cx;
   y=cy;
 }
 
-void printk(char *string)
+void printk(char *string, int fd)
 {
   int i;
   for (i = 0; string[i]; i++)
-    printc(string[i]);
+    printc(string[i], fd);
 }
 
 void __itoa(int a, char *b)
@@ -122,47 +125,47 @@ void itox(int a, char *b)
   b[i]=0;
 }
 
-void printkln(char* string) {
-  printk(string);
-  printc('\n');
+void printkln(char* string, int fd) {
+  printk(string, fd);
+  printc('\n', fd);
 }
 
 // Prints the provided integer
-void printkint(int i) {
+void printkint(int i, int fd) {
   char itoa_buff[11];
   __itoa(i, itoa_buff);
-  printk(itoa_buff);
+  printk(itoa_buff, fd);
 }
 
-void printkintln(int i) {
-  printkint(i);
-  printc('\n');
+void printkintln(int i, int fd) {
+  printkint(i, fd);
+  printc('\n', fd);
 }
 
 // Prints the provided integer in hexadecimal
-void printkhex(int i) {
+void printkhex(int i, int fd) {
   char buf[11];
   itox(i, buf);
-  printk(buf);
+  printk(buf, fd);
 }
 
 // Prints the provided integer in hexadecimal plus a newline
-void printkhexln(int i) {
-  printkhex(i);
-  printc('\n');
+void printkhexln(int i, int fd) {
+  printkhex(i, fd);
+  printc('\n' ,fd);
 }
 
-void printkptr(const void* ptr) {
+void printkptr(const void* ptr, int fd) {
   if (ptr == NULL) {
-    printk("NULL");
+    printk("NULL", fd);
     return;
   }
-  printkhex((int)(long)ptr);
+  printkhex((int)(long)ptr, fd);
 }
 
-void printkptrln(const void* ptr) {
-  printkptr(ptr);
-  printc('\n');
+void printkptrln(const void* ptr, int fd) {
+  printkptr(ptr, fd);
+  printc('\n', fd);
 }
 
 
@@ -170,62 +173,39 @@ void __attribute__ ((noinline)) __dummy(const char* template, const void* args[]
   return;
 }
 
-void __printkf(const char* template, const void* args[]) {
+void __printkf(const char* template, const void* args[], int fd) {
   int i = 0, arg = 0;
   char c;
   while ( (c = template[i]) ) {
     i += 1;
     if (c != '%') {
-      printc(c);
+      printc(c, fd);
       continue;
     }
     switch (template[i]) {
       case 'd':
-        printkint(*(int*)args[arg]);
+        printkint(*(int*)args[arg], fd);
         break;
       case 'p':
-        printkptr(args[arg]);
+        printkptr(args[arg], fd);
         break;
       case 'x':
-        printkhex(*(int*)args[arg]);
+        printkhex(*(int*)args[arg], fd);
+        break;
+      case 'c':
+        printc(*(char*)args[arg], fd);
         break;
       case 's':
-        printk((char*)args[arg]);
+        printk((char*)args[arg], fd);
         break;
       default:
-        printk("%ERROR in arg %"); printkint(arg);
+        printk("%ERROR in arg %", fd); printkint(arg, fd);
         break;
     }
     arg += 1;
     i += 1;
   }
 }
-
-void dbg_task(struct task_struct* task) {
-  printkf("task {\n\
-  PID: %d\n\
-  addr: %p\n\
-  dir_pages_baseAddr: %p\n\
-  kernel_esp: %x\n\
-  list: %p\n\
-\n\
-  children: %p\n\
-  parent_list: %p\n\
-  parent: %p\n\
-  parent_PID: %d\n\
-}\n",
-    &task->PID,
-    task,
-    task->dir_pages_baseAddr,
-    &task->register_esp,
-    &task->list
-    // &task->children,
-    // task->parent_list.next,
-    // task->parent,
-    // task->parent ? &task->parent->PID : &err
-  );
-}
-
 
 void setCursor(int nx, int ny) {
   x = nx;
