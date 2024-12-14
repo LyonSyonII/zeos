@@ -9,6 +9,7 @@
 /*****************************/
 
 typedef unsigned char       Byte;
+typedef          char       SByte; // signed byte
 typedef unsigned short int  Word;
 typedef unsigned long       DWord;
 
