@@ -177,3 +177,8 @@ void __printf(char* template, const void* args[], int fd) {
     i += 1;
   }
 }
+
+
+void write_xy(char c, int x, int y, colors_fg fg, colors_bg bg, Word Screen[25][80]) {
+  Screen[x][y] = (bg << 4 | fg) << 8 | c;
+}

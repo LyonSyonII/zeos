@@ -150,4 +150,8 @@ typedef enum {
     (const void *[]){ SELECT_CAST_MACRO(COUNT_ARGS(__VA_ARGS__))(__VA_ARGS__) }
 
 
+
+void write_xy(char c, int x, int y, colors_fg fg, colors_bg bg, Word Screen[25][80]);
+
+
 #endif  /* __LIBC_H__ */
