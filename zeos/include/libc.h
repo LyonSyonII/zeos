@@ -87,7 +87,7 @@ int println(char* buffer, int fd);
 void __printf(char* template, const void* args[], int fd);
 
 
-enum {
+typedef enum {
     FG_BLACK,
     FG_BLUE,
     FG_GREEN,
@@ -106,7 +106,7 @@ enum {
     FG_WHITE    
 } colors_fg;
 
-enum {
+typedef enum {
     BG_BLACK,
     BG_BLUE,
     BG_GREEN,
@@ -148,6 +148,10 @@ enum {
 // Step 4: Final CREATE_ARRAY macro
 #define CREATE_ARRAY(...) \
     (const void *[]){ SELECT_CAST_MACRO(COUNT_ARGS(__VA_ARGS__))(__VA_ARGS__) }
+
+
+
+void write_xy(char c, int x, int y, colors_fg fg, colors_bg bg, Word Screen[25][80]);
 
 
 #endif  /* __LIBC_H__ */
