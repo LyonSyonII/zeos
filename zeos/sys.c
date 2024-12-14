@@ -391,6 +391,7 @@ struct sem_t* sys_semcreate(int initial_value) {
   sem->creator_TID = current()->TID;
   sem->count = initial_value;
   
+  // printkf("[sys_semcreate] Created semaphore with id = %d, count = %d\n", &sem->id, &sem->count);
   return (struct sem_t*)(long)global_semaphore_id;
 }
 
@@ -409,14 +410,18 @@ int sys_semwait(struct sem_t* s) {
   // convert id to sem ptr
   s = get_sem_from_user_ptr(s);
   if (s == NULL) return -EFAULT;
-  
+
+  // printkf("[sys_semwait] Waiting for semaphore with id = %d, count = %d\n", &s->id, &s->count);
+
   s->count -= 1;
   if (s->count < 0) {
+    int sem_id = s->id;
     // printkf("[sys_semwait] Sem count is negative, blocking thread...\n");
     update_process_state_rr(current(), &s->blocked);
     sched_next_rr();
+    // If woken up by semDestroy, return -1
+    if (s->id != sem_id) return -EAGAIN;
   }
-
   return 0;
 }
 
