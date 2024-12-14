@@ -87,6 +87,45 @@ int println(char* buffer, int fd);
 void __printf(char* template, const void* args[], int fd);
 
 
+enum {
+    FG_BLACK,
+    FG_BLUE,
+    FG_GREEN,
+    FG_CYAN,
+    FG_RED,
+    FG_MAGENTA,
+    FG_BROWN,
+    FG_LIGHT_GRAY,
+    FG_DARK_GRAY,
+    FG_LIGHT_BLUE,
+    FG_LIGHT_GREEN,
+    FG_LIGHT_CYAN,
+    FG_LIGHT_RED,
+    FG_LIGHT_MAGENTA,
+    FG_YELLOW,
+    FG_WHITE    
+} colors_fg;
+
+enum {
+    BG_BLACK,
+    BG_BLUE,
+    BG_GREEN,
+    BG_CYAN,
+    BG_RED,
+    BG_MAGENTA,
+    BG_BROWN,
+    BG_LIGHT_GRAY,
+    BG_BLINKING_BLACK,
+    BG_BLINKING_BLUE,
+    BG_BLINKING_GREEN,
+    BG_BLINKING_CYAN,
+    BG_BLINKING_RED,
+    BG_BLINKING_MAGENTA,
+    BG_BLINKING_BROWN,
+    BG_BLINKING_LIGHT_GRAY        
+} colors_bg;
+
+
 // Macros per fer el printf sense referencies
 #define CAST_0()
 #define CAST_1(a1) (void *)(long)(a1)
