@@ -87,7 +87,7 @@ int println(char* buffer, int fd);
 void __printf(char* template, const void* args[], int fd);
 
 
-enum {
+typedef enum {
     FG_BLACK,
     FG_BLUE,
     FG_GREEN,
@@ -106,7 +106,7 @@ enum {
     FG_WHITE    
 } colors_fg;
 
-enum {
+typedef enum {
     BG_BLACK,
     BG_BLUE,
     BG_GREEN,
