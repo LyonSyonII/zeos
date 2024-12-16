@@ -82,26 +82,13 @@ int access_ok(int type, const void * addr, unsigned long size)
     if (addr_ini < USER_FIRST_PAGE) return 0;
   }
   // Common check
-  page_table_entry* PT = get_DIR(current());
+  page_table_entry* PT = get_PT(current());
   
   for (int i = addr_ini; i < addr_fin; i++) {
     printkf("[access_ok] Checking page: %d\n", &i);
     if (PT[i].bits.user == 0) return 0;
   }
   
-  // OLD IMPL
-  /*   switch(type) {
-    case VERIFY_WRITE:
-      // Should suppose no support for automodifyable code
-      if ((addr_ini>=USER_FIRST_PAGE+NUM_PAG_CODE)&&
-          (addr_fin<=USER_FIRST_PAGE+NUM_PAG_CODE+NUM_PAG_DATA+20)) // TODO: Remove +20 when a solution to thread shared attributes is found
-	  return 1;
-    default:
-      if ((addr_ini>=USER_FIRST_PAGE)&&
-  	(addr_fin<=(USER_FIRST_PAGE+NUM_PAG_CODE+NUM_PAG_DATA+20))) // TODO: Remove +20 when a solution to thread shared attributes is found
-          return 1;
-  } */  
-
   return 1;
 }
 

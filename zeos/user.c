@@ -23,10 +23,10 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
   
   // test_keyboard(0);
   // test_screen(0);
-  // test_fork(4);
-  // test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
+  test_fork(4);
+  test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
   test_semaphore();
-  // if (!test_alloc()) exit();
+  if (!test_alloc()) exit();
 
   println("Finished tests!\n\n");
   exit();
@@ -304,6 +304,7 @@ int test_alloc() {
   printf("[test-alloc] Deallocating pages...\n", &n);
   if (memRegDel(alloc) < 0) {
     printf("[test-alloc] Error deallocating %d pages: ", &n); perror();
+    printchar('\n');
     return 0;
   }
 

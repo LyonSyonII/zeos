@@ -149,38 +149,11 @@ int sys_fork(void)
     }
   }  
   
-  INIT_LIST_HEAD(&uchild->task.allocated_pages_list);
-  struct list_head* parent_allocated_pages_list = &current()->allocated_pages_list;
-  if (!list_empty(parent_allocated_pages_list)) {
-    // Corregir primera entrada de la llista del fill, assignant el punter a l'adreça de l'atribut del task_struct
-    // Si no es corregeix la llista continuara utilitzant l'adreça del pare, i donara errors
-    struct page_metadata* first_metadata = list_entry(parent_allocated_pages_list->next, struct page_metadata, list);
-    int metadata_page = (long)first_metadata >> 12;
-    int frame = get_frame(process_PT, metadata_page);
-    // set_ss_pag(process_PT, metadata_page, frame);
-    set_ss_pag(parent_PT, temp_logical, frame);
-    struct page_metadata* target_metadata = (void*)(long)(temp_logical << 12);
-    uchild->task.allocated_pages_list.prev = parent_allocated_pages_list->prev;
-    uchild->task.allocated_pages_list.next = parent_allocated_pages_list->next;
-    target_metadata->list.prev = &uchild->task.allocated_pages_list;
-    del_ss_pag(parent_PT, temp_logical);
-    set_cr3(get_DIR(current()));
-    
-    // Corregir ultima entrada de la llista del fill, assignant el punter a l'adreça de l'atribut del task_struct
-    struct page_metadata* last_metadata = list_entry(parent_allocated_pages_list->prev, struct page_metadata, list);
-    metadata_page = (long)last_metadata >> 12;
-    frame = get_frame(process_PT, metadata_page);
-    // set_ss_pag(process_PT, metadata_page, frame);
-    set_ss_pag(parent_PT, temp_logical, frame);
-    target_metadata = (void*)(long)(temp_logical << 12);
-    target_metadata->list.next = &uchild->task.allocated_pages_list;
-    del_ss_pag(parent_PT, temp_logical);
-    set_cr3(get_DIR(current()));
-  }
   // volatile int* a = 0; *a;
   
   uchild->task.PID=++global_PID;
   uchild->task.TID=0;
+  uchild->task.first_allocated_page=NULL;
 
   int register_ebp;		/* frame pointer */
   /* Map Parent's ebp to child's stack */
@@ -251,15 +224,16 @@ void thread_exit(struct task_struct* process) {
   printkf("[sys_exit] Exiting thread PID = %d; TID = %d;\n", &process->PID, &process->TID);
   
   // Deallocate dynamic pages
-  struct list_head *element, *n;
-  list_for_each_safe(element, n, &process->allocated_pages_list) {
-    struct page_metadata* metadata = list_entry(element, struct page_metadata, list);
-    int start_page = (long)metadata >> 12;
-    int end_page = start_page + metadata->size - 1;
-    printkf("[sys_exit] Freeing dynamic pages from %d to %d\n", &start_page, &end_page);
-    dealloc_pages(process, start_page, metadata->size, 0);
+  if (process->first_allocated_page != NULL) {
+    struct list_head *element, *n;
+    list_for_each_safe(element, n, &process->first_allocated_page->list) {
+      struct page_metadata* metadata = list_entry(element, struct page_metadata, list);
+      int start_page = (long)metadata >> 12;
+      int end_page = start_page + metadata->size - 1;
+      printkf("[sys_exit] Freeing dynamic pages from %d to %d\n", &start_page, &end_page);
+      dealloc_pages(process, start_page, metadata->size, 0);
+    }
   }
-  
   // Deallocate stack
   printkf("[sys_exit] Freeing stack pages %d to %d\n", &process->stack_start_page, &stack_end_page);
   dealloc_pages(process, process->stack_start_page, process->stack_num_pages, 1);
@@ -496,7 +470,7 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
   uchild->task.stack_num_pages=N;
   uchild->task.stack_start_page=stack_page;
   uchild->task.state=ST_READY;
-  INIT_LIST_HEAD(&uchild->task.allocated_pages_list);
+  uchild->task.first_allocated_page = NULL;
   
   // setup user and system stack
   unsigned long* user_stack = (unsigned long*)(long)(stack_page << 12);
@@ -529,13 +503,19 @@ char* sys_memregget(int num_pages) {
   // allocate extra page for metadata
   int first_page = alloc_pages(current(), num_pages+1);
   if (first_page < 0) return NULL;
-
+  
   struct page_metadata* metadata = (struct page_metadata*)(long)(first_page << 12);
   *metadata = new_page_metadata(num_pages+1);
   page_table_entry* process_PT = get_PT(current());
+  // disallow user accessing metadata
   process_PT[first_page].bits.user = 0;
   
-  list_add_tail(&metadata->list, &current()->allocated_pages_list);
+  // If first allocated page, initialize list
+  if (metadata->parent->first_allocated_page == NULL) {
+    INIT_LIST_HEAD(&metadata->list);
+    metadata->parent->first_allocated_page = metadata;
+  }
+  list_add_tail(&metadata->list, &metadata->parent->first_allocated_page->list);
   // return skipping metadata page
   return (char*)(long)((first_page+1) << 12);
 }
@@ -549,7 +529,20 @@ int sys_memregdel(char* m) {
   struct page_metadata* metadata = (struct page_metadata*)(m - PAGE_SIZE);
   if (!metadata_ptr_ok(metadata)) return -EFAULT;
   
-  list_del(&metadata->list);
+  // No need to update parent if process is not the original one
+  if (metadata->parent_PID == current()->PID) {
+    // Current metadata is the first element on the list
+    struct page_metadata** first_allocated_page = &metadata->parent->first_allocated_page;
+    if (*first_allocated_page == metadata) {
+      // If list empty, remove from parent
+      // If not, update to next one
+      if (metadata->list.next == metadata->list.prev) *first_allocated_page = NULL;
+      else *first_allocated_page = list_entry(&metadata->list.next, struct page_metadata, list);
+    }
+    list_del(&metadata->list);
+  }
+
   dealloc_pages(current(), (long)(metadata) >> 12, metadata->size, 1);
+  
   return 0;
 }

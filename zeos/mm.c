@@ -275,10 +275,12 @@ unsigned int get_frame (page_table_entry *PT, unsigned int logical_page){
 struct page_metadata new_page_metadata(unsigned int size) {
   return (struct page_metadata){
     .marker = METADATA_MARKER,
-    size,
+    .size = size,
+    .list = { 0 },
+    .parent = current(),
+    .parent_PID = current()->PID,
     .marker2 = METADATA_MARKER,
-    .list = 0
-  };
+  };;
 }
 
 // Allocates N consecutive pages in the main directory of the given task_struct.
