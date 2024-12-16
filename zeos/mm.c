@@ -310,7 +310,7 @@ int alloc_pages(struct task_struct *task, int N) {
     int frame = alloc_frame();
     if (frame < 0) {
       // not enough physical pages, abort
-      dealloc_pages(task, stack_page, i, 1);
+      dealloc_pages(task, stack_page, i-1, 1);
       return -ENOMEM;
     }
       

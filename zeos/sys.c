@@ -528,6 +528,8 @@ char* sys_memregget(int num_pages) {
   // TODO: Metadata is written in the first allocated page until other method is found
   // allocate extra page for metadata
   int first_page = alloc_pages(current(), num_pages+1);
+  if (first_page < 0) return NULL;
+
   struct page_metadata* metadata = (struct page_metadata*)(long)(first_page << 12);
   *metadata = new_page_metadata(num_pages+1);
   page_table_entry* process_PT = get_PT(current());
@@ -541,6 +543,7 @@ char* sys_memregget(int num_pages) {
 // This call deletes a previously allocated memory region m, releasing all its resources.
 int sys_memregdel(char* m) {
   if (m == NULL) return -EFAULT;
+  if (!access_ok(VERIFY_WRITE, m, PAGE_SIZE)) return -EFAULT;
   
   // [m] = { metadata, PAGE_SIZE * metadata->size }
   struct page_metadata* metadata = (struct page_metadata*)(m - PAGE_SIZE);
