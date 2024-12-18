@@ -234,6 +234,10 @@ void thread_exit(struct task_struct* process) {
     // Get metadata from page and ensure it's correct
     struct page_metadata* metadata = (struct page_metadata*)(long)(pag << 12);
     if (!metadata_ptr_ok(metadata)) continue;
+    
+    // If page is not from this process, skip
+    if (metadata->parent_PID != process->PID) continue;
+    if (metadata->parent_TID != process->TID) continue;
 
     // Free pages from this allocation
     int start_page = (long)metadata >> 12;

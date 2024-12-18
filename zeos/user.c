@@ -18,8 +18,6 @@ int test_alloc();
 
 int __attribute__ ((__section__(".text.main"))) main(void) {
   printchar('\n');
-  // player: 2
-  // enemy: 8
   
   // test_keyboard(0);
   // test_screen(0);
@@ -276,6 +274,8 @@ void tat(void* arg) {
     printf("[test-alloc] Memory successfully freed from thread's fork\n");
     exit();
   }
+
+  memRegGet(5); // test sys_exit deallocating pages
   printf("[test-alloc] Thread #%d test complete!\n", &thread);
 }
 int test_alloc() {
