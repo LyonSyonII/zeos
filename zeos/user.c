@@ -70,49 +70,11 @@ void task_keyboard(keyboard_params* params);
 void start_screen(player_t* player, keyboard_params* keyboard, screen_params* screen);
 void level_transition(Byte* level_id, player_t* player, keyboard_params* keyboard, screen_params* screen);
 SByte player_update(player_t* player, char input, Word* screen);
+void player_death(screen_params* screen, player_t* player, level_t* level, Byte level_id);
 int enemy_update(int time, level_t* level, Word* screen, SByte px, SByte py, SByte current_move);
 void wait(int ticks);
 int update_delay(int time, short* remaining_delay, int* prev, unsigned short delay);
-void clearScreen(screen_params* screen) {
-  /*for (int i = 0; i < WIDTH * HEIGHT - 1; ++i) {
-    screen->buf[i] = 0;
-  }*/
-
-  // AIGUA
-  for (int i = 1; i < HEIGHT/2; ++i) {
-    for (int j = 0; j < WIDTH; ++j) {
-      screen->buf[i*WIDTH + j] = (BG_BLUE << 4 | FG_BLACK) << 8 | 0x00;
-    }
-  }
-
-  // CARRETERA  
-  for (int i = HEIGHT/2 + 1; i < REALHEIGHT; ++i) {
-    for (int j = 0; j < WIDTH; ++j) {
-      screen->buf[i*WIDTH + j] = (BG_BLACK << 4 | FG_BLACK) << 8 | 0x00;
-    }
-  }
-
-  // Voreres
-  for (int i = 0; i < WIDTH; ++i) screen->buf[HEIGHT/2*WIDTH + i] = (BG_MAGENTA << 4 | FG_BLACK) << 8 | 0x00;
-  for (int i = 0; i < WIDTH; ++i) screen->buf[REALHEIGHT*WIDTH + i] = (BG_MAGENTA << 4 | FG_BLACK) << 8 | 0x00;
-
-  // Meta
-  for (int i = 0; i < WIDTH; ++i) screen->buf[i] = ((i&0x01 ? BG_LIGHT_GRAY : BG_RED) << 4 | FG_BLACK) << 8 | 0x00;
-
-  // Ponts
-  int bridge_spacing = WIDTH/(nBridge + 1);
-  for (int b = 1; b <= nBridge; ++b) {
-    for (int r = 1; r < HEIGHT/2; ++r) {
-      for (int c = 0; c < bridge_Width; ++c) {
-        screen->buf[b*bridge_spacing + r*WIDTH + c] = (BG_BROWN << 4 | FG_BLACK) << 8 | 0x00;
-      }
-    }
-  }
-
-
-  semSignal(screen->start);
-  semWait(screen->end);
-}
+void clearScreen(screen_params* screen);
 
 
 int __attribute__ ((__section__(".text.main"))) main(void) {
@@ -151,37 +113,22 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
         level = levels[level_id];
         continue;
       } else if (player.bg == BG_BLUE) { // estem a l'aigua
-        goto player_death;
+        player_death(&screen, &player, &level, level_id);
+        continue;
       }
     }
 
     // If player collides with enemy
     if (enemy_update(time, &level, screen.buf, player.x, player.y, cMove)) {
-      goto player_death;
-      /*clearScreen(&screen);
-      wait(1000);
-      player.x = WIDTH/2;
-      player.y = REALHEIGHT;
-      level = levels[level_id];
-      player_update(&player, 0, screen.buf);
-      continue;*/
+      player_death(&screen, &player, &level, level_id);
+      continue;
     }
-
-    write_xy(player.sprite, player.x, player.y, player.fg, player.bg,screen.buf); // al final dibuixem l'sprite del jugador (si no de vegades no es veia)
+    
+    // al final dibuixem l'sprite del jugador (si no de vegades no es veia)
+    write_xy(player.sprite, player.x, player.y, player.fg, player.bg,screen.buf);
     
     semSignal(screen.start);
     semWait(screen.end);
-
-    continue;
-    player_death:
-      clearScreen(&screen);
-      wait(1000);
-      player.x = WIDTH/2;
-      player.y = REALHEIGHT;
-      player.bg = BG_MAGENTA;
-      level = levels[level_id];
-      player_update(&player, 0, screen.buf);
-    // wait(delay);
   }
 }
 
@@ -267,12 +214,20 @@ SByte player_update(player_t* player, char input, Word* screen) {
         break;
       }
     }
-
-    //drawSprite(player->sprite, player->x, player->y, player->fg, 0xF0, Word *screen)
+    
     player->bg = screen[player->x + player->y*WIDTH]>>12;
-
-    //write_xy(player->sprite, player->x, player->y, player->fg, player->bg, screen);
+    
     return res;
+}
+
+void player_death(screen_params* screen, player_t* player, level_t* level, Byte level_id) {
+  clearScreen(screen);
+  wait(1000);
+  player->x = WIDTH/2;
+  player->y = REALHEIGHT;
+  player->bg = BG_MAGENTA;
+  *level = levels[level_id];
+  player_update(player, 0, screen->buf);
 }
 
 // Returns 1 if the player collided with an enemy, 0 otherwise.
@@ -296,18 +251,13 @@ int enemy_update(int time, level_t* level, Word* screen, SByte px, SByte py, SBy
     enemy->bg = screen[enemy->x + enemy->y*WIDTH] >> 12; // update bg
 
     if (py == enemy->y) {
-      if (px == enemy->x) return 1; // check normal
-      /*
-      if (current_move != 0 && current_move != temp_direction) {
-        if (current_move > 0) {
-          if (px - current_move == enemy->x) return 1; // Per algun motiu no funciona el mateix if per a les dues direccions (no li agradava que SByte fos un char en comptes d'un signed char crec)
-        } else if (px == enemy->x - temp_direction) return 1;
-      }*/
-      if (current_move + temp_direction == 0) {
-        if (px == enemy->x - temp_direction) return 1;
+      // check normal
+      if (px == enemy->x) return 1;
+      // check horitzontal
+      if (current_move + temp_direction == 0 && px == enemy->x - temp_direction) {
+        return 1;
       }
     }
-    /*if (px == enemy->x && py == enemy->y) return 1;*/
     
     write_xy(enemy->sprite, enemy->x, enemy->y, enemy->fg, enemy->bg, screen);
   }
@@ -353,6 +303,43 @@ typedef struct {
 #define enemy(_sprite, _x, _y, _direction, _fg, _bg, _delay) (enemy_t) { .sprite = _sprite, .x = _x, .y = _y, .direction = _direction, .fg = _fg, .bg = _bg, .delay = _delay, .remaining_delay = _delay }
 #define card(x, y, direction) enemy(8, x, y, direction, FG_RED, y >= HEIGHT>>1 ? BG_BLACK : BG_BLUE, STANDARD_DELAY/2)
 #define card2(x, y, direction) enemy(8, x, y, direction, FG_RED, y >= HEIGHT>>1 ? BG_BLACK : BG_BLUE, SECOND/36)
+
+void clearScreen(screen_params* screen) {
+  // AIGUA
+  for (int i = 1; i < HEIGHT/2; ++i) {
+    for (int j = 0; j < WIDTH; ++j) {
+      screen->buf[i*WIDTH + j] = (BG_BLUE << 4 | FG_BLACK) << 8 | 0x00;
+    }
+  }
+  
+  // CARRETERA  
+  for (int i = HEIGHT/2 + 1; i < REALHEIGHT; ++i) {
+    for (int j = 0; j < WIDTH; ++j) {
+      screen->buf[i*WIDTH + j] = (BG_BLACK << 4 | FG_BLACK) << 8 | 0x00;
+    }
+  }
+  
+  // Voreres
+  for (int i = 0; i < WIDTH; ++i) screen->buf[HEIGHT/2*WIDTH + i] = (BG_MAGENTA << 4 | FG_BLACK) << 8 | 0x00;
+  for (int i = 0; i < WIDTH; ++i) screen->buf[REALHEIGHT*WIDTH + i] = (BG_MAGENTA << 4 | FG_BLACK) << 8 | 0x00;
+  
+  // Meta
+  for (int i = 0; i < WIDTH; ++i) screen->buf[i] = ((i&0x01 ? BG_LIGHT_GRAY : BG_RED) << 4 | FG_BLACK) << 8 | 0x00;
+  
+  // Ponts
+  int bridge_spacing = WIDTH/(nBridge + 1);
+  for (int b = 1; b <= nBridge; ++b) {
+    for (int r = 1; r < HEIGHT/2; ++r) {
+      for (int c = 0; c < bridge_Width; ++c) {
+        screen->buf[b*bridge_spacing + r*WIDTH + c] = (BG_BROWN << 4 | FG_BLACK) << 8 | 0x00;
+      }
+    }
+  }
+  
+  
+  semSignal(screen->start);
+  semWait(screen->end);
+}
 
 static enemy_t level1[] = {
   card(WIDTH/2, 3, LEFT),
