@@ -238,12 +238,14 @@ void thread_exit(struct task_struct* process) {
     // If page is not from this process, skip
     if (metadata->parent_PID != process->PID) continue;
     if (metadata->parent_TID != process->TID) continue;
-
+    
     // Free pages from this allocation
     int start_page = (long)metadata >> 12;
     int end_page = start_page + metadata->size - 1;
     printkf("[sys_exit] Freeing dynamic pages from %d to %d\n", &start_page, &end_page);
     dealloc_pages(process, start_page, metadata->size, 0);
+    // Skip already deallocated pages
+    pag = end_page;
   }
   
   process->PID=-1;

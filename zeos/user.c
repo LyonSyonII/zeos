@@ -274,8 +274,10 @@ void tat(void* arg) {
     printf("[test-alloc] Memory successfully freed from thread's fork\n");
     exit();
   }
-
-  memRegGet(5); // test sys_exit deallocating pages
+  // test sys_exit deallocating pages
+  memRegGet(5); 
+  memRegGet(2);
+  memRegGet(1);
   printf("[test-alloc] Thread #%d test complete!\n", &thread);
 }
 int test_alloc() {
