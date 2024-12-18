@@ -276,9 +276,8 @@ struct page_metadata new_page_metadata(unsigned int size) {
   return (struct page_metadata){
     .marker = METADATA_MARKER,
     .size = size,
-    .list = { 0 },
-    .parent = current(),
     .parent_PID = current()->PID,
+    .parent_TID = current()->TID,
     .marker2 = METADATA_MARKER,
   };;
 }

@@ -23,9 +23,9 @@ int __attribute__ ((__section__(".text.main"))) main(void) {
   
   // test_keyboard(0);
   // test_screen(0);
-  test_fork(4);
-  test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
-  test_semaphore();
+  // test_fork(4);
+  // test_threads(4, 0); // terminate = 1 per testejar exit al thread principal
+  // test_semaphore();
   if (!test_alloc()) exit();
 
   println("Finished tests!\n\n");
@@ -279,6 +279,43 @@ void tat(void* arg) {
   printf("[test-alloc] Thread #%d test complete!\n", &thread);
 }
 int test_alloc() {
+  {
+    println("Starting test 1");
+    char* alloc = memRegGet(1);
+    char* alloc2 = memRegGet(1);
+    char* alloc3 = memRegGet(1);
+    memRegDel(alloc);
+    memRegDel(alloc2);
+    memRegDel(alloc3);
+    println("Test 1 complete");
+    
+    println("Starting test 2");
+    println("alloc");
+    alloc = memRegGet(1);
+    println("alloc2");
+    alloc2 = memRegGet(2);
+    println("alloc3");
+    alloc3 = memRegGet(1);
+    println("Deleting alloc2");
+    memRegDel(alloc2);
+    char* alloc4 = memRegGet(1);
+    char* alloc5 = memRegGet(1);
+    memRegDel(alloc3);
+    memRegDel(alloc4);
+    memRegDel(alloc5);
+    memRegDel(alloc);
+    println("Test 2 complete");
+    
+    println("Starting test 3");
+    alloc = memRegGet(4);
+    alloc2 = memRegGet(1);
+    alloc3 = memRegGet(1);
+    alloc4 = memRegGet(1);
+    alloc5 = memRegGet(1);
+    println("Test 3 complete");
+  }
+  
+  
   int n = 3;
   printf("[test-alloc] Allocating %d pages...\n", &n);
   char* alloc = memRegGet(n);
@@ -307,7 +344,7 @@ int test_alloc() {
     printchar('\n');
     return 0;
   }
-
+  
   printf("[test-alloc] Testing allocation persistent on threads\n");
   char* alloc2 = memRegGet(n);
   alloc2[0] = 1;
