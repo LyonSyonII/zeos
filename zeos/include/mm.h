@@ -44,9 +44,8 @@ unsigned int get_frame(page_table_entry *PT, unsigned int page);
 struct page_metadata {
     unsigned int marker;
     unsigned int size; /* Size of the allocated region *including* the page where the metadata is stored. */
-    struct list_head list; /* Anchor for the owner's list */
-    struct task_struct* parent; /* Index of the parent (needed to update when page is deallocated) */
-    int parent_PID; /* Original parent's PID (needed to avoid issues with fork and createThread) */
+    int parent_PID;
+    int parent_TID;
     unsigned int marker2;
 };
 struct page_metadata new_page_metadata(unsigned int size);

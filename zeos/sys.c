@@ -225,26 +225,34 @@ int sys_gettime()
 }
 
 void thread_exit(struct task_struct* process) {
-  page_table_entry *process_PT = get_PT(process);
+  page_table_entry* process_PT = get_PT(process);
   
   // Deallocate the stack of this thread
   int stack_end_page = process->stack_start_page + process->stack_num_pages - 1;
   printkf("[sys_exit] Exiting thread PID = %d; TID = %d;\n", &process->PID, &process->TID);
-  
-  // Deallocate dynamic pages
-  if (process->first_allocated_page != NULL) {
-    struct list_head *element, *n;
-    list_for_each_safe(element, n, &process->first_allocated_page->list) {
-      struct page_metadata* metadata = list_entry(element, struct page_metadata, list);
-      int start_page = (long)metadata >> 12;
-      int end_page = start_page + metadata->size - 1;
-      printkf("[sys_exit] Freeing dynamic pages from %d to %d\n", &start_page, &end_page);
-      dealloc_pages(process, start_page, metadata->size, 0);
-    }
-  }
-  // Deallocate stack
   printkf("[sys_exit] Freeing stack pages %d to %d\n", &process->stack_start_page, &stack_end_page);
   dealloc_pages(process, process->stack_start_page, process->stack_num_pages, 1);
+
+  // Deallocate dynamic pages
+  for (int pag = PAG_LOG_INIT_DATA+NUM_PAG_DATA; pag < TOTAL_PAGES-1; pag++) {
+    page_table_entry* entry = &process_PT[pag];
+    // If not allocated or user-accessible, skip
+    if (!entry->bits.present || entry->bits.user) continue;
+    
+    // Get metadata from page and ensure it's correct
+    struct page_metadata* metadata = (struct page_metadata*)(long)(pag << 12);
+    if (!metadata_ptr_ok(metadata)) continue;
+    
+    // If page is not from this process, skip
+    if (metadata->parent_PID != process->PID) continue;
+    if (metadata->parent_TID != process->TID) continue;
+
+    // Free pages from this allocation
+    int start_page = (long)metadata >> 12;
+    int end_page = start_page + metadata->size - 1;
+    printkf("[sys_exit] Freeing dynamic pages from %d to %d\n", &start_page, &end_page);
+    dealloc_pages(process, start_page, metadata->size, 0);
+  }
   
   process->PID=-1;
   process->TID=-1;
@@ -506,8 +514,7 @@ int sys_threadcreatewithstack(void (*function)(void* arg), int N, void* paramete
 // This memory region is inherited by child processes (fork) and other threads.
 char* sys_memregget(int num_pages) {
   if (num_pages <= 0) return NULL;
-
-  // TODO: Metadata is written in the first allocated page until other method is found
+  
   // allocate extra page for metadata
   int first_page = alloc_pages(current(), num_pages+1);
   if (first_page < 0) return NULL;
@@ -518,12 +525,6 @@ char* sys_memregget(int num_pages) {
   // disallow user accessing metadata
   process_PT[first_page].bits.user = 0;
   
-  // If first allocated page, initialize list
-  if (metadata->parent->first_allocated_page == NULL) {
-    INIT_LIST_HEAD(&metadata->list);
-    metadata->parent->first_allocated_page = metadata;
-  }
-  list_add_tail(&metadata->list, &metadata->parent->first_allocated_page->list);
   // return skipping metadata page
   return (char*)(long)((first_page+1) << 12);
 }
@@ -536,20 +537,6 @@ int sys_memregdel(char* m) {
   // [m] = { metadata, PAGE_SIZE * metadata->size }
   struct page_metadata* metadata = (struct page_metadata*)(m - PAGE_SIZE);
   if (!metadata_ptr_ok(metadata)) return -EFAULT;
-  
-  // No need to update parent if process is not the original one
-  if (metadata->parent_PID == current()->PID) {
-    // Current metadata is the first element on the list
-    struct page_metadata** first_allocated_page = &metadata->parent->first_allocated_page;
-    if (*first_allocated_page == metadata) {
-      // If list empty, remove from parent
-      // If not, update to next one
-      if (metadata->list.next == metadata->list.prev) *first_allocated_page = NULL;
-      else *first_allocated_page = list_entry(&metadata->list.next, struct page_metadata, list);
-    }
-    list_del(&metadata->list);
-  }
-
   dealloc_pages(current(), (long)(metadata) >> 12, metadata->size, 1);
   
   return 0;
