@@ -252,6 +252,8 @@ void thread_exit(struct task_struct* process) {
     int end_page = start_page + metadata->size - 1;
     printkf("[sys_exit] Freeing dynamic pages from %d to %d\n", &start_page, &end_page);
     dealloc_pages(process, start_page, metadata->size, 0);
+    // skip deallocated pages
+    pag = end_page;
   }
   
   process->PID=-1;
