@@ -222,7 +222,7 @@ SByte player_update(player_t* player, char input, Word* screen) {
 
 void player_death(screen_params* screen, player_t* player, level_t* level, Byte level_id) {
   clearScreen(screen);
-  wait(1000);
+  wait(SECOND);
   player->x = WIDTH/2;
   player->y = REALHEIGHT;
   player->bg = BG_MAGENTA;
